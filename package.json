@@ -1,0 +1,11 @@
+{
+  "name": "hamon",
+  "version": "0.0.1",
+  "description": "Event-driven architecture with varying types of hook",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "SamHwang1990 @funnyecho",
+  "license": "MIT"
+}
