@@ -2,10 +2,20 @@
   "name": "hamon",
   "version": "0.0.1",
   "description": "Event-driven architecture with varying types of hook",
+  "jest": {
+    "testRegex": "/scripts/jest/dont-run-jest-directly\\.js$"
+  },
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js"
   },
   "author": "SamHwang1990 @funnyecho",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^24.0.23",
+    "cross-env": "^6.0.3",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.2.0",
+    "typescript": "^3.7.3"
+  }
 }
