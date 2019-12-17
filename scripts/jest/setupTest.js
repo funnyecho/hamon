@@ -22,6 +22,10 @@ global.closureName = function closureName(metaOrGiven, should) {
         givenInput = [givenInput];
     }
     
+    if (shouldInput == undefined) {
+        return `\n${givenInput.map(v => `\t* ${v}`).join('\n')}`;
+    }
+    
     if (!Array.isArray(shouldInput)) {
         shouldInput = [shouldInput];
     }
@@ -32,3 +36,13 @@ global.closureName = function closureName(metaOrGiven, should) {
 global.closureToDo = function closureToDo() {
     fail(new Error('test closure is empty'));
 };
+
+global.suiteName = function suiteName(given) {
+    if (!Array.isArray(given)) {
+        given = [given];
+    }
+    
+    return given.join('; ').trim();
+};
+
+global.noop = function() {};

@@ -12,7 +12,8 @@ module.exports = {
       '<rootDir>/src'
   ],
   setupFilesAfterEnv: [
-    require.resolve('./setupTest.js')
+    require.resolve('./setupTest.js'),
+    "jest-extended",
   ],
   transform: {
     "^.+\\.(ts|tsx)$": "ts-jest"

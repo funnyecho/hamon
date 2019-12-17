@@ -1,3 +1,13 @@
 {
-  "baseUrl": "."
+  "baseUrl": ".",
+  "compilerOptions": {
+    "types": [
+      "node",
+      "jest"
+    ],
+    "lib": [
+      "ES5",
+      "ES2015"
+    ]
+  }
 }
