@@ -2,6 +2,8 @@
  * Created by samhwang1990@gmail.com.
  */
 
+import { SyncHook } from '../index';
+
 describe('SyncHook', () => {
     describe(
         suiteName([
@@ -14,9 +16,12 @@ describe('SyncHook', () => {
                 const args1 = [1, false, 'foo'];
                 const args2 = [undefined, null, { foo: 1 }, ['bar']];
                 
-                // TODO: listen to hook
-                // TODO: invoke hook with args1
-                // TODO: invoke hook with args2
+                let hook = new SyncHook<any[]>();
+                hook.tap(cb);
+                
+                hook.call(...args1);
+                hook.call(...args2);
+                
                 expect(cb).toBeCalledTimes(2);
                 expect(cb).nthCalledWith(1, ...args1);
                 expect(cb).nthCalledWith(2, ...args2);
@@ -24,26 +29,27 @@ describe('SyncHook', () => {
             
             test('`unTap` is a function which can remove listener', () => {
                 const cb = jest.fn();
-                const unTap = noop;
 
-                // TODO: listen to hook
-                // TODO: invoke hook
+                let hook = new SyncHook();
+                const unTap = hook.tap(cb);
+                
+                hook.call();
                 
                 expect(cb).toBeCalledTimes(1);
                 cb.mockClear();
                 
                 unTap();
 
-                // TODO: invoke hook
+                hook.call();
                 
                 expect(cb).not.toBeCalled();
             });
             
             test('invocation return `undefined`', () => {
-                let invokeResult = null;
+                let hook = new SyncHook();
+                const unTap = hook.tap(noop);
 
-                // TODO: listen to hook
-                // TODO: invoke hook
+                let invokeResult = hook.call();
                 
                 expect(invokeResult).toBe(undefined);
             })
@@ -58,10 +64,12 @@ describe('SyncHook', () => {
                 () => {
                     const cb1 = jest.fn();
                     const cb2 = jest.fn();
-
-                    // TODO: listen to hook with cb1,cb2
-
-                    // TODO: invoke hook
+                    
+                    let hook = new SyncHook();
+                    hook.tap(cb1);
+                    hook.tap(cb2);
+                    
+                    hook.call();
                     
                     expect(cb1).toBeCalledTimes(1);
                     expect(cb2).toBeCalledTimes(1);
@@ -69,8 +77,8 @@ describe('SyncHook', () => {
                     cb1.mockClear();
                     cb2.mockClear();
                     
-                    // TODO: clean hook listeners
-                    // TODO: invoke hook
+                    hook.exhaust();
+                    hook.call();
 
                     expect(cb1).not.toBeCalled();
                     expect(cb2).not.toBeCalled();
@@ -78,10 +86,10 @@ describe('SyncHook', () => {
             );
             
             test('invocation return `undefined`', () => {
-                const invokeResult = null;
+                let hook = new SyncHook();
+                const unTap = hook.tap(noop);
 
-                // TODO: listen to hook
-                // TODO: invoke hook
+                let invokeResult = hook.call();
 
                 expect(invokeResult).toBe(undefined);
             })
@@ -100,8 +108,8 @@ describe('SyncHook with hashcode', () => {
                const hashcodeFn = jest.fn();
                const args = [1, false, 'foo'];
                
-               // TODO: create SyncHook with hashcode function
-               // TODO: invoke hook with args
+               let hook = new SyncHook(hashcodeFn);
+               hook.call(...args);
                
                expect(hashcodeFn).toBeCalledTimes(1);
                expect(hashcodeFn).toBeCalledWith(...args);
@@ -138,10 +146,12 @@ describe('SyncHook with hashcode', () => {
                         }
                     };
                     
-                    // TODO: create hook with hashFn
-                    // TODO: listen to hook with input
+                    let hook = new SyncHook<[number, number]>(hashFn);
+                    hook.tap(input.hash1.cb, 3);
+                    hook.tap(input.hash2.cb, 5);
                     
-                    // TODO: invoke hook with args1
+                    // @ts-ignore
+                    invokeResult = hook.call(...input.hash1.args);
                     
                     expect(invokeResult).toBe(undefined);
                     expect(input.hash1.cb).toBeCalledWith(...input.hash1.args);
@@ -150,7 +160,8 @@ describe('SyncHook with hashcode', () => {
                     input.hash1.cb.mockClear();
                     input.hash2.cb.mockClear();
 
-                    // TODO: invoke hook with args1
+                    // @ts-ignore
+                    invokeResult = hook.call(...input.hash2.args);
 
                     expect(invokeResult).toBe(undefined);
                     expect(input.hash1.cb).not.toBeCalled();
@@ -169,17 +180,17 @@ describe('SyncHook with hashcode', () => {
                     ]
                 ),
                 () => {
-                    let invocationResult = null;
                     let cb = jest.fn();
                     let args = [1,2];
 
                     function hashFn(v1, v2) {
                         return v1 + v2;
                     }
-
-                    // TODO: create SyncHook with hashFn
-                    // TODO: listen to hook without hashcode specified
-                    // TODO: invoke hook with args
+                    
+                    let hook = new SyncHook<[number, number]>(hashFn);
+                    hook.tap(cb);
+                    
+                    let invocationResult = hook.call.apply(hook, args);
 
                     expect(cb).toBeCalledWith(...args);
                     expect(invocationResult).toBe(undefined);

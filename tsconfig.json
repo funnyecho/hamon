@@ -1,6 +1,8 @@
 {
   "baseUrl": ".",
   "compilerOptions": {
+    "target": "es5",
+    "strictNullChecks": false,
     "types": [
       "node",
       "jest"
@@ -8,6 +10,7 @@
     "lib": [
       "ES5",
       "ES2015"
-    ]
+    ],
+    "downlevelIteration": true
   }
 }

@@ -9,7 +9,7 @@ module.exports = {
   coverageDirectory: 'coverage',
   rootDir: process.cwd(),
   roots: [
-      '<rootDir>/src'
+      '<rootDir>/libs'
   ],
   setupFilesAfterEnv: [
     require.resolve('./setupTest.js'),
