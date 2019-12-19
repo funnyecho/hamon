@@ -2,6 +2,8 @@
  * Created by samhwang1990@gmail.com.
  */
 
+import { AsyncSeriesWaterfallHook } from '../index';
+
 import isPromise from "./utils/isPromise";
 
 describe('AsyncSeriesWaterfallHook', () => {
@@ -25,13 +27,13 @@ describe('AsyncSeriesWaterfallHook', () => {
 
                     let args = [1, 2, 3];
 
-                    let invokePromise: Promise<undefined>;
+                    let invokePromise: Promise<number|string>;
                     let unTap;
 
-                    // TODO: create AsyncSeriesWaterfallHook
-                    // TODO: listen to hook with cb, update unTap;
-
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    let hook = new AsyncSeriesWaterfallHook<number[], number|string>();
+                    unTap = hook.tapAsync(cb);
+                    
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).rejects.toThrow(errFail);
 
@@ -41,7 +43,7 @@ describe('AsyncSeriesWaterfallHook', () => {
                     expect(cb.mock.calls[0][2]).toBe(3);
                     expect(cb.mock.calls[0][3]).toBeFunction();
 
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).resolves.toBe('foo');
 
@@ -53,7 +55,7 @@ describe('AsyncSeriesWaterfallHook', () => {
 
                     unTap();
 
-                    // TODO: invoke hook with callPromise
+                    await hook.callPromise(...args);
 
                     expect(cb).toBeCalledTimes(2);
                 })
@@ -87,12 +89,12 @@ describe('AsyncSeriesWaterfallHook', () => {
                     let args = [1, 2, 3];
 
                     let unTap;
-                    let invokePromise: Promise<undefined>;
+                    let invokePromise: Promise<string|number>;
+                    
+                    let hook = new AsyncSeriesWaterfallHook<number[], number|string>();
+                    unTap = hook.tapPromise(cb);
 
-                    // TODO: create AsyncSeriesWaterfallHook
-                    // TODO: listen to hook with cb, update unTap;
-
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).rejects.toThrow(errThrowingError);
                     expect(cb).toBeCalledTimes(1);
@@ -100,7 +102,7 @@ describe('AsyncSeriesWaterfallHook', () => {
                     expect(cb.mock.calls[0][1]).toBe(2);
                     expect(cb.mock.calls[0][2]).toBe(3);
 
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).rejects.toThrow(errRejectedPromise);
                     expect(cb).toBeCalledTimes(2);
@@ -108,7 +110,7 @@ describe('AsyncSeriesWaterfallHook', () => {
                     expect(cb.mock.calls[1][1]).toBe(2);
                     expect(cb.mock.calls[1][2]).toBe(3);
 
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).resolves.toBe('foo');
                     expect(cb).toBeCalledTimes(3);
@@ -118,7 +120,7 @@ describe('AsyncSeriesWaterfallHook', () => {
 
                     unTap();
 
-                    // TODO: invoke hook with callPromise
+                    await hook.callPromise(...args);
 
                     expect(cb).toBeCalledTimes(3);
                 }
@@ -130,10 +132,7 @@ describe('AsyncSeriesWaterfallHook', () => {
         '`callAsync(...args, cb)` to invoke',
         () => {
             test('invocation calling return nothing', () => {
-                let invokeResult = null;
-
-                // TODO: create AsyncSeriesWaterfallHook
-                // TODO: invoke hook
+                let invokeResult = new AsyncSeriesWaterfallHook().callAsync(noop);
 
                 expect(invokeResult).toBeUndefined();
             });
@@ -166,12 +165,13 @@ describe('AsyncSeriesWaterfallHook', () => {
                     expect(seriesCalledResult[3]).toBe(4);
 
                     done();
-                }
+                };
 
-                // TODO: create AsyncSeriesWaterfallHook
-                // TODO: listen to hook with [asyncListener, promiseListener]
-
-                // TODO: invoke hook with invokeCb
+                let hook = new AsyncSeriesWaterfallHook();
+                hook.tapAsync(asyncListener);
+                hook.tapPromise(promiseListener);
+                
+                hook.callAsync(invokeCb);
             });
             
             
@@ -192,19 +192,19 @@ describe('AsyncSeriesWaterfallHook', () => {
 
                     let asyncCompleteCb = jest.fn((...args) => {
                         setTimeout(() => {
-                            args.pop()('async complete');
+                            args.pop()(null, 'async complete');
                         }, 10);
                     });
                     let promiseCompleteCb = jest.fn()
                         .mockImplementationOnce((...args) => {
-                            return new Promise(resolve => {
+                            return new Promise<void>(resolve => {
                                 setTimeout(() => {
                                     resolve();
                                 }, 10);
                             })
                         })
                         .mockImplementationOnce((...args) => {
-                            return new Promise(resolve => {
+                            return new Promise<string>(resolve => {
                                 setTimeout(() => {
                                     resolve('promise complete');
                                 }, 10);
@@ -216,7 +216,7 @@ describe('AsyncSeriesWaterfallHook', () => {
                         }, 10);
                     });
                     let promiseFailedCb = jest.fn((...args) => {
-                        return new Promise((resolve, reject) => {
+                        return new Promise<void>((resolve, reject) => {
                             setTimeout(() => {
                                 reject(promiseErr);
                             }, 10)
@@ -225,58 +225,78 @@ describe('AsyncSeriesWaterfallHook', () => {
 
                     let unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete;
 
-                    // TODO: create AsyncSeriesWaterfallHook
-                    /**
-                     * TODO:
-                     *    listen to hook with [asyncFailedCb, asyncCompleteCb, promiseFailedCb, promiseCompleteCb]
-                     *    update unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete
-                     * */
+                    let hook = new AsyncSeriesWaterfallHook<number[], string|number>();
+
+                    unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
+                    unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
+                    unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
+                    unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
                     
                     let invokeCb = jest.fn()
                         .mockImplementationOnce((...invokeResult) => {
                             expect(invokeResult.length).toBe(1);
                             expect(invokeResult[0]).toBe(asyncErr);
 
-                            expect(asyncFailedCb).toBeCalledWith(...args);
+                            expect(asyncFailedCb).toBeCalled();
+                            expect(asyncFailedCb.mock.calls[0][0]).toBe(args[0]);
+                            expect(asyncFailedCb.mock.calls[0][1]).toBe(args[1]);
 
                             expect(promiseFailedCb).not.toBeCalled();
                             expect(asyncCompleteCb).not.toBeCalled();
                             expect(promiseCompleteCb).not.toBeCalled();
 
                             unTapAsyncFailed();
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
                         .mockImplementationOnce((...invokeResult) => {
                             expect(invokeResult.length).toBe(1);
                             expect(invokeResult[0]).toBe(promiseErr);
 
-                            expect(asyncCompleteCb).nthCalledWith(1, ...args);
-                            expect(promiseFailedCb).toBeCalledWith('async complete', ...args.slice(1));
-                            
+                            expect(asyncCompleteCb).toBeCalledTimes(1);
+                            expect(asyncCompleteCb.mock.calls[0][0]).toBe(args[0]);
+                            expect(asyncCompleteCb.mock.calls[0][1]).toBe(args[1]);
+
+                            expect(promiseFailedCb).toBeCalledTimes(1);
+                            expect(promiseFailedCb.mock.calls[0][0]).toBe('async complete');
+                            expect(promiseFailedCb.mock.calls[0][1]).toBe(args[1]);
+
                             expect(promiseCompleteCb).not.toBeCalled();
 
                             unTapPromiseFailed();
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
                         .mockImplementationOnce((...invokeResult) => {
                             expect(invokeResult.length).toBe(2);
                             expect(invokeResult[0]).toBeNil();
                             expect(invokeResult[1]).toBe('async complete');
 
-                            expect(asyncCompleteCb).toBeCalledWith(...args);
-                            expect(promiseCompleteCb).nthCalledWith(1, 'async complete', ...args.slice(1));
+                            expect(asyncCompleteCb).toBeCalledTimes(2);
+                            expect(asyncCompleteCb.mock.calls[1][0]).toBe(args[0]);
+                            expect(asyncCompleteCb.mock.calls[1][1]).toBe(args[1]);
+
+                            expect(promiseCompleteCb).toBeCalledTimes(1);
+                            expect(promiseCompleteCb.mock.calls[0][0]).toBe('async complete');
+                            expect(promiseCompleteCb.mock.calls[0][1]).toBe(args[1]);
+                            
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
                         .mockImplementationOnce((...invokeResult) => {
                             expect(invokeResult.length).toBe(2);
                             expect(invokeResult[0]).toBeNil();
                             expect(invokeResult[1]).toBe('promise complete');
 
-                            expect(asyncCompleteCb).toBeCalledWith(...args);
-                            expect(promiseCompleteCb).nthCalledWith(2, 'async complete', ...args.slice(1));
+                            expect(asyncCompleteCb).toBeCalledTimes(3);
+                            expect(asyncCompleteCb.mock.calls[2][0]).toBe(args[0]);
+                            expect(asyncCompleteCb.mock.calls[2][1]).toBe(args[1]);
+
+                            expect(promiseCompleteCb).toBeCalledTimes(2);
+                            expect(promiseCompleteCb.mock.calls[1][0]).toBe('async complete');
+                            expect(promiseCompleteCb.mock.calls[1][1]).toBe(args[1]);
+                            
+                            done()
                         });
 
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
+                    hook.callAsync.call(hook, ...args, invokeCb);
                 }
             )
         }
@@ -286,15 +306,12 @@ describe('AsyncSeriesWaterfallHook', () => {
         '`callPromise(...args, cb)` to invoke',
         () => {
             test('invocation return a promise', () => {
-                let invokeReturn;
-
-                // TODO: create AsyncParallelHooks
-                // TODO: invoke hook
+                let invokeReturn = new AsyncSeriesWaterfallHook().callPromise();
 
                 expect(isPromise(invokeReturn)).toBeTrue();
             });
 
-            test('all listener was called in queue with args', (done) => {
+            test('all listener was called in queue with args', async () => {
                 let seriesCalledResult = [];
                 let asyncListener = jest.fn((...args) => {
                     let cb = args.pop();
@@ -315,10 +332,11 @@ describe('AsyncSeriesWaterfallHook', () => {
                     }));
                 });
 
-                // TODO: create AsyncSeriesWaterfallHook
-                // TODO: listen to hook with [asyncListener, promiseListener]
-
-                // TODO: invoke hook with invokeCb
+                let hook = new AsyncSeriesWaterfallHook();
+                hook.tapAsync(asyncListener);
+                hook.tapPromise(promiseListener);
+                
+                await hook.callPromise();
 
                 expect(seriesCalledResult[0]).toBe(1);
                 expect(seriesCalledResult[1]).toBe(2);
@@ -343,19 +361,19 @@ describe('AsyncSeriesWaterfallHook', () => {
 
                     let asyncCompleteCb = jest.fn((...args) => {
                         setTimeout(() => {
-                            args.pop()('async complete');
+                            args.pop()(null, 'async complete');
                         }, 10);
                     });
                     let promiseCompleteCb = jest.fn()
                         .mockImplementationOnce((...args) => {
-                            return new Promise(resolve => {
+                            return new Promise<void>(resolve => {
                                 setTimeout(() => {
                                     resolve();
                                 }, 10);
                             })
                         })
                         .mockImplementationOnce((...args) => {
-                            return new Promise(resolve => {
+                            return new Promise<string>(resolve => {
                                 setTimeout(() => {
                                     resolve('promise complete');
                                 }, 10);
@@ -367,7 +385,7 @@ describe('AsyncSeriesWaterfallHook', () => {
                         }, 10);
                     });
                     let promiseFailedCb = jest.fn((...args) => {
-                        return new Promise((resolve, reject) => {
+                        return new Promise<void>((resolve, reject) => {
                             setTimeout(() => {
                                 reject(promiseErr);
                             }, 10)
@@ -376,47 +394,64 @@ describe('AsyncSeriesWaterfallHook', () => {
 
                     let unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete;
                     let invokePromise;
-
-                    // TODO: create AsyncSeriesWaterfallHook
-                    /**
-                     * TODO:
-                     *    listen to hook with [asyncFailedCb, asyncCompleteCb, promiseFailedCb, promiseCompleteCb]
-                     *    update unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete
-                     * */
-
-                    // TODO: invoke hook with args and update invokePromise
+                    
+                    let hook = new AsyncSeriesWaterfallHook<number[], number|string>();
+                    unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
+                    unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
+                    unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
+                    unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
+                    
+                    invokePromise = hook.callPromise(...args);
                     
                     await expect(invokePromise).rejects.toThrow(asyncErr);
-                    
-                    expect(asyncFailedCb).toBeCalledWith(...args);
-                    expect(asyncCompleteCb).not.toBeCalled();
+
+                    expect(asyncFailedCb).toBeCalled();
+                    expect(asyncFailedCb.mock.calls[0][0]).toBe(args[0]);
+                    expect(asyncFailedCb.mock.calls[0][1]).toBe(args[1]);
+
                     expect(promiseFailedCb).not.toBeCalled();
+                    expect(asyncCompleteCb).not.toBeCalled();
                     expect(promiseCompleteCb).not.toBeCalled();
                     
                     unTapAsyncFailed();
 
-                    // TODO: invoke hook with args and update invokePromise
+                    invokePromise = hook.callPromise(...args);
                     
                     await expect(invokePromise).rejects.toThrow(promiseErr);
-                    expect(asyncCompleteCb).nthCalledWith(1, ...args);
-                    expect(promiseFailedCb).toBeCalledWith('async complete',  ...args.slice(1));
+
+                    expect(asyncCompleteCb).toBeCalledTimes(1);
+                    expect(asyncCompleteCb.mock.calls[0][0]).toBe(args[0]);
+                    expect(asyncCompleteCb.mock.calls[0][1]).toBe(args[1]);
+
+                    expect(promiseFailedCb).toBeCalledTimes(1);
+                    expect(promiseFailedCb.mock.calls[0][0]).toBe('async complete');
+                    expect(promiseFailedCb.mock.calls[0][1]).toBe(args[1]);
+
                     expect(promiseCompleteCb).not.toBeCalled();
                     
                     unTapPromiseFailed();
 
-                    // TODO: invoke hook with args and update invokePromise
+                    invokePromise = hook.callPromise(...args);
                     
                     await expect(invokePromise).resolves.toBe('async complete');
-                    
-                    expect(asyncCompleteCb).nthCalledWith(2, ...args);
-                    expect(promiseCompleteCb).nthCalledWith(1, 'async complete',  ...args.slice(1));
+
+                    expect(asyncCompleteCb).toBeCalledTimes(2);
+                    expect(asyncCompleteCb.mock.calls[1][0]).toBe(args[0]);
+                    expect(asyncCompleteCb.mock.calls[1][1]).toBe(args[1]);
+
+                    expect(promiseCompleteCb).toBeCalledTimes(1);
+                    expect(promiseCompleteCb.mock.calls[0][0]).toBe('async complete');
+                    expect(promiseCompleteCb.mock.calls[0][1]).toBe(args[1]);
                     
                     unTapAsyncComplete();
 
-                    // TODO: invoke hook with args and update invokePromise
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).resolves.toBe('promise complete');
-                    expect(promiseCompleteCb).nthCalledWith(2, ...args);
+                    
+                    expect(promiseCompleteCb).toBeCalledTimes(2);
+                    expect(promiseCompleteCb.mock.calls[1][0]).toBe(args[0]);
+                    expect(promiseCompleteCb.mock.calls[1][1]).toBe(args[1]);
                 }
             );
         }
@@ -439,9 +474,12 @@ describe('AsyncSeriesWaterfallHook', () => {
                 '`callPromise(...args)` invoke nothing, promise resolved with void immediately',
                 async () => {
                     let invokePromise;
-                    // TODO: create AsyncSeriesWaterfallHook
-                    // TODO: listen to hook with [asyncCb, promiseCb], update invokePromise;
-                    // TODO: invoke hook
+                    
+                    let hook = new AsyncSeriesWaterfallHook<number[], number>();
+                    hook.tapAsync(asyncCb);
+                    hook.tapPromise(promiseCb);
+                    
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).resolves.toBe(args[0]);
                     expect(asyncCb).toBeCalledTimes(1);
@@ -450,10 +488,10 @@ describe('AsyncSeriesWaterfallHook', () => {
                     asyncCb.mockClear();
                     promiseCb.mockClear();
 
-                    // TODO: exhaust hook
-                    // TODO: invoke hook
+                    hook.exhaust();
+                    invokePromise = hook.callPromise(...args);
 
-                    await expect(invokePromise).resolves.toBeUndefined();
+                    await expect(invokePromise).resolves.toBe(args[0]);
                     expect(asyncCb).not.toBeCalled();
                     expect(promiseCb).not.toBeCalled();
                 }
@@ -474,8 +512,8 @@ describe('AsyncSeriesWaterfallHook', () => {
                             asyncCb.mockClear();
                             promiseCb.mockClear();
 
-                            // TODO: exhaust hook
-                            // TODO: invoke hook
+                            hook.exhaust();
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
                         .mockImplementationOnce((...invokeResult) => {
                             expect(invokeResult.length).toBe(2);
@@ -488,9 +526,11 @@ describe('AsyncSeriesWaterfallHook', () => {
                             done();
                         });
 
-                    // TODO: create AsyncSeriesWaterfallHook
-                    // TODO: listen to hook with [asyncCb, promiseCb]
-                    // TODO: invoke hook with invokeCb
+                    let hook = new AsyncSeriesWaterfallHook<number[], number>();
+                    hook.tapAsync(asyncCb);
+                    hook.tapPromise(promiseCb);
+                    
+                    hook.callAsync.call(hook, ...args, invokeCb);
                 }
             )
         }

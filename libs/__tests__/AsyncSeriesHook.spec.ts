@@ -2,6 +2,8 @@
  * Created by samhwang1990@gmail.com.
  */
 
+import { AsyncSeriesHook } from '../index';
+
 import isPromise from "./utils/isPromise";
 
 describe('AsyncSeriesHook', () => {
@@ -25,13 +27,13 @@ describe('AsyncSeriesHook', () => {
 
                     let args = [1, 2, 3];
 
-                    let invokePromise: Promise<undefined>;
+                    let invokePromise: Promise<void>;
                     let unTap;
 
-                    // TODO: create AsyncSeriesHook
-                    // TODO: listen to hook with cb, update unTap;
-
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    let hook = new AsyncSeriesHook<number[]>();
+                    unTap = hook.tapAsync(cb);
+                    
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).rejects.toThrow(errFail);
 
@@ -41,7 +43,7 @@ describe('AsyncSeriesHook', () => {
                     expect(cb.mock.calls[0][2]).toBe(3);
                     expect(cb.mock.calls[0][3]).toBeFunction();
 
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).resolves.toBeUndefined();
 
@@ -53,7 +55,7 @@ describe('AsyncSeriesHook', () => {
 
                     unTap();
 
-                    // TODO: invoke hook with callPromise
+                    await hook.callPromise(...args);
 
                     expect(cb).toBeCalledTimes(2);
                 }
@@ -82,12 +84,12 @@ describe('AsyncSeriesHook', () => {
                 let args = [1, 2, 3];
 
                 let unTap;
-                let invokePromise: Promise<undefined>;
-
-                // TODO: create AsyncSeriesHook
-                // TODO: listen to hook with cb, update unTap;
-
-                // TODO: invoke hook with callPromise, update invokePromise
+                let invokePromise: Promise<void>;
+                
+                let hook = new AsyncSeriesHook<number[]>();
+                unTap = hook.tapPromise(cb);
+                
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).rejects.toThrow(errThrowingError);
                 expect(cb).toBeCalledTimes(1);
@@ -95,7 +97,7 @@ describe('AsyncSeriesHook', () => {
                 expect(cb.mock.calls[0][1]).toBe(2);
                 expect(cb.mock.calls[0][2]).toBe(3);
 
-                // TODO: invoke hook with callPromise, update invokePromise
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).rejects.toThrow(errRejectedPromise);
                 expect(cb).toBeCalledTimes(2);
@@ -103,7 +105,7 @@ describe('AsyncSeriesHook', () => {
                 expect(cb.mock.calls[1][1]).toBe(2);
                 expect(cb.mock.calls[1][2]).toBe(3);
 
-                // TODO: invoke hook with callPromise, update invokePromise
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).resolves.toBeUndefined();
                 expect(cb).toBeCalledTimes(3);
@@ -113,7 +115,7 @@ describe('AsyncSeriesHook', () => {
 
                 unTap();
 
-                // TODO: invoke hook with callPromise
+                await hook.callPromise(...args);
 
                 expect(cb).toBeCalledTimes(3);
             });
@@ -126,8 +128,8 @@ describe('AsyncSeriesHook', () => {
             test('invocation calling return nothing', () => {
                 let invokeResult = null;
 
-                // TODO: create AsyncSeriesHook
-                // TODO: invoke hook
+                let hook = new AsyncSeriesHook();
+                invokeResult = hook.callAsync(noop);
 
                 expect(invokeResult).toBeUndefined();
             });
@@ -145,7 +147,7 @@ describe('AsyncSeriesHook', () => {
 
                 let promiseListener = jest.fn((...args) => {
                     seriesCalledResult.push(3);
-                    return new Promise((resolve => {
+                    return new Promise<void>((resolve => {
                         setTimeout(() => {
                             seriesCalledResult.push(4);
                             resolve();
@@ -160,12 +162,13 @@ describe('AsyncSeriesHook', () => {
                     expect(seriesCalledResult[3]).toBe(4);
 
                     done();
-                }
+                };
 
-                // TODO: create AsyncSeriesHook
-                // TODO: listen to hook with [asyncListener, promiseListener]
-
-                // TODO: invoke hook with invokeCb
+                let hook = new AsyncSeriesHook();
+                hook.tapAsync(asyncListener);
+                hook.tapPromise(promiseListener);
+                
+                hook.callAsync(invokeCb);
             });
             
             test(
@@ -185,7 +188,7 @@ describe('AsyncSeriesHook', () => {
                         }, 10);
                     });
                     let promiseCompleteCb = jest.fn((...args) => {
-                        return new Promise(resolve => {
+                        return new Promise<void>(resolve => {
                             setTimeout(() => {
                                 resolve();
                             }, 10);
@@ -197,7 +200,7 @@ describe('AsyncSeriesHook', () => {
                         }, 10);
                     });
                     let promiseFailedCb = jest.fn((...args) => {
-                        return new Promise((resolve, reject) => {
+                        return new Promise<void>((resolve, reject) => {
                             setTimeout(() => {
                                 reject(promiseErr);
                             }, 10)
@@ -206,13 +209,13 @@ describe('AsyncSeriesHook', () => {
 
                     let unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete;
 
-                    // TODO: create AsyncSeriesHook
-                    /**
-                     * TODO:
-                     *    listen to hook with [asyncFailedCb, promiseFailedCb, asyncCompleteCb, promiseCompleteCb]
-                     *    update unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete
-                     * */
+                    let hook = new AsyncSeriesHook();
 
+                    unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
+                    unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
+                    unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
+                    unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
+                    
                     let invokeCb = jest.fn()
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(1);
@@ -225,6 +228,7 @@ describe('AsyncSeriesHook', () => {
                             expect(promiseCompleteCb).not.toBeCalled();
 
                             unTapAsyncFailed();
+                            hook.callAsync(invokeCb);
                         })
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(1);
@@ -236,15 +240,16 @@ describe('AsyncSeriesHook', () => {
                             expect(promiseCompleteCb).not.toBeCalled();
 
                             unTapPromiseFailed();
+                            hook.callAsync(invokeCb);
                         })
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(0);
 
                             expect(asyncCompleteCb).toBeCalled();
-                            
-                            expect(promiseCompleteCb).not.toBeCalled();
+                            expect(promiseCompleteCb).toBeCalled();
                             
                             unTapAsyncComplete();
+                            hook.callAsync(invokeCb);
                         })
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(0);
@@ -252,13 +257,9 @@ describe('AsyncSeriesHook', () => {
                             expect(promiseCompleteCb).toBeCalled();
                             
                             done();
-                        })
-
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-
+                        });
+                    
+                    hook.callAsync(invokeCb);
                 }
             )
         }
@@ -268,13 +269,13 @@ describe('AsyncSeriesHook', () => {
         test('invocation return a promise', () => {
             let invokeReturn;
 
-            // TODO: create AsyncParallelHooks
-            // TODO: invoke hook
+            let hook = new AsyncSeriesHook();
+            invokeReturn = hook.callPromise();
 
             expect(isPromise(invokeReturn)).toBeTrue();
         });
 
-        test('all listener was called in queue with args', (done) => {
+        test('all listener was called in queue with args', async () => {
             let seriesCalledResult = [];
             let asyncListener = jest.fn((...args) => {
                 let cb = args.pop();
@@ -287,7 +288,7 @@ describe('AsyncSeriesHook', () => {
 
             let promiseListener = jest.fn((...args) => {
                 seriesCalledResult.push(3);
-                return new Promise((resolve => {
+                return new Promise<void>((resolve => {
                     setTimeout(() => {
                         seriesCalledResult.push(4);
                         resolve();
@@ -295,10 +296,11 @@ describe('AsyncSeriesHook', () => {
                 }));
             });
 
-            // TODO: create AsyncSeriesHook
-            // TODO: listen to hook with [asyncListener, promiseListener]
-
-            // TODO: invoke hook with invokeCb
+            let hook = new AsyncSeriesHook();
+            hook.tapAsync(asyncListener);
+            hook.tapPromise(promiseListener);
+            
+            await hook.callPromise();
             
             expect(seriesCalledResult[0]).toBe(1);
             expect(seriesCalledResult[1]).toBe(2);
@@ -323,7 +325,7 @@ describe('AsyncSeriesHook', () => {
                     }, 10);
                 });
                 let promiseCompleteCb = jest.fn((...args) => {
-                    return new Promise(resolve => {
+                    return new Promise<void>(resolve => {
                         setTimeout(() => {
                             resolve();
                         }, 10);
@@ -335,7 +337,7 @@ describe('AsyncSeriesHook', () => {
                     }, 10);
                 });
                 let promiseFailedCb = jest.fn((...args) => {
-                    return new Promise((resolve, reject) => {
+                    return new Promise<void>((resolve, reject) => {
                         setTimeout(() => {
                             reject(promiseErr);
                         }, 10)
@@ -345,14 +347,14 @@ describe('AsyncSeriesHook', () => {
                 let unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete;
                 let invokePromise;
 
-                // TODO: create AsyncSeriesHook
-                /**
-                 * TODO:
-                 *    listen to hook with [asyncFailedCb, promiseFailedCb, asyncCompleteCb, promiseCompleteCb]
-                 *    update unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete
-                 * */
+                let hook = new AsyncSeriesHook<number[]>();
 
-                // TODO: invoke hook with args and update invokePromise
+                unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
+                unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
+                unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
+                unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
+
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).rejects.toThrow(asyncErr);
 
@@ -364,7 +366,7 @@ describe('AsyncSeriesHook', () => {
 
                 unTapAsyncFailed();
 
-                // TODO: invoke hook with args and update invokePromise
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).rejects.toThrow(promiseErr);
 
@@ -375,21 +377,21 @@ describe('AsyncSeriesHook', () => {
 
                 unTapPromiseFailed();
 
-                // TODO: invoke hook with args and update invokePromise
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).resolves.toBeUndefined();
 
                 expect(asyncCompleteCb).toBeCalled();
 
-                expect(promiseCompleteCb).not.toBeCalled();
+                expect(promiseCompleteCb).toBeCalledTimes(1);
 
                 unTapAsyncComplete();
 
-                // TODO: invoke hook with args and update invokePromise
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).resolves.toBeUndefined();
 
-                expect(promiseCompleteCb).toBeCalled();
+                expect(promiseCompleteCb).toBeCalledTimes(2);
             }
         );
     });
@@ -409,9 +411,11 @@ describe('AsyncSeriesHook', () => {
                 '`callPromise(...args)` invoke nothing, promise resolved with void immediately',
                 async () => {
                     let invokePromise;
-                    // TODO: create AsyncSeriesHook
-                    // TODO: listen to hook with [asyncCb, promiseCb], update invokePromise;
-                    // TODO: invoke hook
+                    let hook = new AsyncSeriesHook();
+                    hook.tapAsync(asyncCb);
+                    hook.tapPromise(promiseCb);
+                    
+                    invokePromise = hook.callPromise();
 
                     await expect(invokePromise).resolves.toBeUndefined();
                     expect(asyncCb).toBeCalledTimes(1);
@@ -420,8 +424,8 @@ describe('AsyncSeriesHook', () => {
                     asyncCb.mockClear();
                     promiseCb.mockClear();
 
-                    // TODO: exhaust hook
-                    // TODO: invoke hook
+                    hook.exhaust();
+                    invokePromise = hook.callPromise();
 
                     await expect(invokePromise).resolves.toBeUndefined();
                     expect(asyncCb).not.toBeCalled();
@@ -441,8 +445,8 @@ describe('AsyncSeriesHook', () => {
                             asyncCb.mockClear();
                             promiseCb.mockClear();
 
-                            // TODO: exhaust hook
-                            // TODO: invoke hook
+                            hook.exhaust();
+                            hook.callAsync(invokeCb);
                         })
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(0);
@@ -453,9 +457,11 @@ describe('AsyncSeriesHook', () => {
                             done();
                         });
 
-                    // TODO: create AsyncSeriesHook
-                    // TODO: listen to hook with [asyncCb, promiseCb]
-                    // TODO: invoke hook with invokeCb
+                    let hook = new AsyncSeriesHook();
+                    hook.tapAsync(asyncCb);
+                    hook.tapPromise(promiseCb);
+                    
+                    hook.callAsync(invokeCb);
                 }
             )
         }

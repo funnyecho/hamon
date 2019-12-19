@@ -7,7 +7,6 @@ import {
     Append,
     Callback,
 } from './types';
-import {on} from "cluster";
 
 type ITapID = string;
 
@@ -219,7 +218,7 @@ class Hook<T, R> {
         return this.tapping(asyncTapFn, bucket);
     }
 
-    protected insertPromiseTap(fn: IPromiseTapCallback<T, R>, bucket?: IHookBucketType): ITapDestroy {
+    protected insertPromiseTap(fn: IPromiseTapCallback<T, R|void>, bucket?: IHookBucketType): ITapDestroy {
         function promiseTapFn(...args) {
             let invokeCb = args.pop() as Callback<Error, R>;
             let invokeArgs = args as AsArray<T>;
@@ -360,7 +359,7 @@ class AsyncTapHook<T, R> extends Hook<T, R> {
     public tapAsync(fn: IAsyncTapCallback<T, R>, bucket?: IHookBucketType): ITapDestroy {
         return this.insertAsyncTap(fn, bucket);
     }
-    public tapPromise(fn: IPromiseTapCallback<T, R>, bucket?: IHookBucketType): ITapDestroy {
+    public tapPromise(fn: IPromiseTapCallback<T, R|void>, bucket?: IHookBucketType): ITapDestroy {
         return this.insertPromiseTap(fn, bucket);
     }
 }
@@ -396,7 +395,11 @@ export class AsyncParallelHook<T, R = void> extends AsyncTapHook<T, R> {
             args,
             {
                 onComplete(err: Error) {
-                    asyncCb(err);
+                    if (err != null) {
+                        asyncCb(err);   
+                    } else {
+                        asyncCb();
+                    }
                 }
             }
         )
@@ -461,7 +464,13 @@ export class AsyncSeriesHook<T, R = void> extends AsyncTapHook<T, R> {
             // @ts-ignored
             args,
             {
-                onComplete: asyncCb,
+                onComplete(err: Error) {
+                    if (err != null) {
+                        asyncCb(err);   
+                    } else {
+                        asyncCb();
+                    }
+                },
             }
         )
     }

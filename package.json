@@ -7,7 +7,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "test": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js --watch"
+    "test": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js"
   },
   "author": "SamHwang1990 @funnyecho",
   "license": "MIT",
