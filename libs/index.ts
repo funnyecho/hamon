@@ -241,13 +241,6 @@ class Hook<T, R> {
     }
     
     protected invokeSeries(args: AsArray<T>, observer?: IInvokeSeriesObserver<T, R>) {
-        if (observer == null) {
-            observer = {
-                shouldWaterfall: false,
-                shouldBail: false,
-            }
-        }
-        
         if (typeof observer.onComplete === 'function') {
             // @ts-ignored
             observer.onComplete = once(observer.onComplete);
@@ -257,12 +250,6 @@ class Hook<T, R> {
     }
     
     protected invokeParallel(args: AsArray<T>, observer?: IInvokeParallelObserver<T, R>) {
-        if (observer == null) {
-            observer = {
-                shouldBail: false,
-            }
-        }
-
         if (typeof observer.onComplete === 'function') {
             // @ts-ignored
             observer.onComplete = once(observer.onComplete);
@@ -272,12 +259,6 @@ class Hook<T, R> {
     }
     
     protected invokeSynchronously(args: AsArray<T>, observer?: IInvokeSynchronouslyObserver<T, R>) {
-        if (observer == null) {
-            observer = {
-                shouldBail: false,
-                shouldWaterfall: false,
-            }
-        }
         return invokeSynchronously<T, R>(observer, args, Array.from(this.getBucketTaps(args)));
     }
 
