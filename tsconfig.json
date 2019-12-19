@@ -1,15 +1,17 @@
 {
-  "baseUrl": ".",
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "es5",
-    "types": [
-      "node",
-      "jest"
-    ],
     "lib": [
       "ES5",
       "ES2015"
     ],
-    "downlevelIteration": true
-  }
+    "downlevelIteration": true,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist"
+  },
+  "files": [
+    "libs/index.ts"
+  ]
 }

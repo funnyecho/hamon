@@ -6,9 +6,11 @@
     "testRegex": "/scripts/jest/dont-run-jest-directly\\.js$"
   },
   "main": "index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js",
-    "test-coverage": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js --coverage"
+    "test:coverage": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js --coverage",
+    "build": "tsc"
   },
   "author": "SamHwang1990 @funnyecho",
   "license": "MIT",

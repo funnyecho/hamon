@@ -5,7 +5,6 @@
 import { AsyncParallelBailHook } from '../index';
 
 import isPromise from "./utils/isPromise";
-import {homedir} from "os";
 
 describe('AsyncParallelBailHook', () => {
     describe(
