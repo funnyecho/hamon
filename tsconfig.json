@@ -2,7 +2,6 @@
   "baseUrl": ".",
   "compilerOptions": {
     "target": "es5",
-    "strictNullChecks": false,
     "types": [
       "node",
       "jest"

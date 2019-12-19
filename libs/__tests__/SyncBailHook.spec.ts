@@ -2,6 +2,8 @@
  * Created by samhwang1990@gmail.com.
  */
 
+import { SyncBailHook } from '../index';
+
 describe('SyncBailHook', () => {
     describe(
         suiteName([
@@ -18,11 +20,16 @@ describe('SyncBailHook', () => {
                 let args = [1, 2, 3];
                 let cb1 = jest.fn();
                 let cb2 = jest.fn().mockReturnValue('foo');
-                let bailResult = null;
+                let bailResult;
                 
-                // TODO: create SyncBailHook
-                // TODO: listen with [cb1, cb1, cb1]
-                // TODO: invoke hook, set return to bailResult
+                let hook: SyncBailHook<[number, number, number], number>;
+
+                hook = new SyncBailHook<[number, number, number], number>();
+                hook.tap(cb1);
+                hook.tap(cb1);
+                hook.tap(cb1);
+
+                bailResult = hook.call.apply(hook, args);
                 
                 expect(cb1).toBeCalledTimes(3);
                 expect(cb1).toBeCalledWith(...args);
@@ -30,10 +37,13 @@ describe('SyncBailHook', () => {
                 
                 cb1.mockClear();
                 cb2.mockClear();
-                
-                // TODO: create SyncWaterfallHook
-                // TODO: listen with [cb1, cb2, cb1]
-                // TODO: invoke hook, set return to bailResult
+
+                hook = new SyncBailHook<[number, number, number], number>();
+                hook.tap(cb1);
+                hook.tap(cb2);
+                hook.tap(cb1);
+
+                bailResult = hook.call.apply(hook, args);
                 
                 expect(cb1).toBeCalledTimes(1);
                 expect(cb1).toBeCalledWith(...args);
@@ -44,18 +54,18 @@ describe('SyncBailHook', () => {
 
             test('`unTap` is a function which can remove listener', () => {
                 const cb = jest.fn();
-                const unTap = noop;
                 
-                // TODO: create SyncBailHook
-                // TODO: listen to hook
-                // TODO: invoke hook
-
+                const hook = new SyncBailHook();
+                const unTap = hook.tap(cb);
+                
+                hook.call();
+                
                 expect(cb).toBeCalledTimes(1);
                 cb.mockClear();
 
                 unTap();
-
-                // TODO: invoke hook
+                
+                hook.call();
                 
                 expect(cb).not.toBeCalled();
             });
@@ -71,9 +81,11 @@ describe('SyncBailHook', () => {
                     const cb1 = jest.fn();
                     const cb2 = jest.fn();
 
-                    // TODO: create SyncBailHook
-                    // TODO: listen to hook with cb1,cb2
-                    // TODO: invoke hook
+                    let hook = new SyncBailHook();
+                    hook.tap(cb1);
+                    hook.tap(cb2);
+                    
+                    hook.call();
 
                     expect(cb1).toBeCalledTimes(1);
                     expect(cb2).toBeCalledTimes(1);
@@ -81,24 +93,13 @@ describe('SyncBailHook', () => {
                     cb1.mockClear();
                     cb2.mockClear();
 
-                    // TODO: clean hook listeners
-                    // TODO: invoke hook
+                    hook.exhaust();
+                    hook.call();
 
                     expect(cb1).not.toBeCalled();
                     expect(cb2).not.toBeCalled();
                 }
             );
-
-            test('invocation return args[0]', () => {
-                const invokeResult = null;
-                let args = [1, 2, 3];
-
-                // TODO: create SyncBailHook
-                // TODO: listen to hook
-                // TODO: invoke hook with args
-
-                expect(invokeResult).toBe(args[0]);
-            })
         }
     );
 });

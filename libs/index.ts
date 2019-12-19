@@ -35,14 +35,12 @@ interface ITapOptions<T, R> {
 interface IInvokeSeriesObserver<T, R> {
     shouldBail?: boolean;
     shouldWaterfall?: boolean;
-    onError?: (err: Error) => void;
-    onComplete?: (result?: R) => void;
+    onComplete?: (err: Error, result?: R) => void;
 }
 
 interface IInvokeParallelObserver<T, R> {
     shouldBail?: boolean;
-    onError?: (err: Error) => void;
-    onComplete?: (result?: R) => void;
+    onComplete?: (err: Error, result?: R) => void;
 }
 
 interface IInvokeSynchronouslyObserver<T, R> {
@@ -54,6 +52,7 @@ function once(fn: Function): Function {
     let called = false;
     return function onceWrapper(...args) {
         if (called) return;
+        called = true;
         fn(...args);
     };
 }
@@ -64,26 +63,17 @@ function invokeSeriesNext<T, R>(
     list: ITapOptions<T, R>[]
 ) {
     let onComplete;
-    let onError;
 
     if (typeof observer.onComplete === 'function') {
         onComplete = observer.onComplete;
     } else {
-        onComplete = function unImplementOnComplete(result?: R) {
-            // 
-        }
-    }
-
-    if (typeof observer.onError === 'function') {
-        onError = observer.onError;
-    } else {
-        onError = function unImplementOnError(err: Error) {
+        onComplete = function unImplementOnComplete(err: Error, result?: R) {
             // 
         }
     }
     
     if (!list.length) {
-        onComplete(args[0]);
+        onComplete(null, args[0]);
         return;
     }
     
@@ -93,12 +83,12 @@ function invokeSeriesNext<T, R>(
 
     let nextArgs = [...args, function onNext(err: Error, result?: R) {
         if (err != null) {
-            onError(err);
+            onComplete(err);
             return;
         }
 
         if (result !== undefined && observer.shouldBail === true) {
-            onComplete(result);
+            onComplete(null, result);
             return;
         }
         
@@ -118,7 +108,6 @@ function invokeParallel<T, R>(
     list: ITapOptions<T, R>[],
 ) {
     let onComplete;
-    let onError;
 
     if (typeof observer.onComplete === 'function') {
         onComplete = observer.onComplete;
@@ -128,16 +117,8 @@ function invokeParallel<T, R>(
         }
     }
 
-    if (typeof observer.onError === 'function') {
-        onError = observer.onError;
-    } else {
-        onError = function unImplementOnError(err: Error) {
-            // 
-        }
-    }
-
     if (!list.length) {
-        onComplete(args[0]);
+        onComplete(null, args[0]);
         return;
     }
 
@@ -145,18 +126,18 @@ function invokeParallel<T, R>(
     
     let nextArgs = [...args, function onNext(err: Error, result?: R) {
         if (err != null) {
-            onError(err);
+            onComplete(err);
             return;
         }
 
         if (result !== undefined && observer.shouldBail === true) {
-            onComplete(result);
+            onComplete(null, result);
             return;
         }
 
         --parallelSize;
         if (parallelSize <= 0) {
-            onComplete(args[0]);
+            onComplete(null, args[0]);
             return;
         }
         
@@ -272,11 +253,6 @@ class Hook<T, R> {
             // @ts-ignored
             observer.onComplete = once(observer.onComplete);
         }
-
-        if (typeof observer.onError === 'function') {
-            // @ts-ignored
-            observer.onError = once(observer.onError);
-        }
         
         invokeSeriesNext<T, R>(observer, args, Array.from(this.getBucketTaps(args)));
     }
@@ -291,11 +267,6 @@ class Hook<T, R> {
         if (typeof observer.onComplete === 'function') {
             // @ts-ignored
             observer.onComplete = once(observer.onComplete);
-        }
-
-        if (typeof observer.onError === 'function') {
-            // @ts-ignored
-            observer.onError = once(observer.onError);
         }
         
         invokeParallel<T, R>(observer, args, Array.from(this.getBucketTaps(args)));
@@ -424,11 +395,8 @@ export class AsyncParallelHook<T, R = void> extends AsyncTapHook<T, R> {
             // @ts-ignored
             args,
             {
-                onError(err) {
+                onComplete(err: Error) {
                     asyncCb(err);
-                },
-                onComplete(_) {
-                    asyncCb(null, undefined);
                 }
             }
         )
@@ -439,11 +407,12 @@ export class AsyncParallelHook<T, R = void> extends AsyncTapHook<T, R> {
             this.invokeParallel(
                 args,
                 {
-                    onError(err) {
-                        reject(err);
-                    },
-                    onComplete(_) {
-                        resolve(undefined);
+                    onComplete(err: Error) {
+                        if (err != null) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
                     }
                 }
             )
@@ -460,12 +429,7 @@ export class AsyncParallelBailHook<T, R> extends AsyncTapHook<T, R> {
             args,
             {
                 shouldBail: true,
-                onError(err) {
-                    asyncCb(err);
-                },
-                onComplete(result) {
-                    asyncCb(null, result);
-                }
+                onComplete: asyncCb,
             }
         )
     }
@@ -476,11 +440,12 @@ export class AsyncParallelBailHook<T, R> extends AsyncTapHook<T, R> {
                 args,
                 {
                     shouldBail: true,
-                    onError(err) {
-                        reject(err);
-                    },
-                    onComplete(result) {
-                        resolve(result);
+                    onComplete(err: Error, result) {
+                        if (err != null) {
+                            reject(err);
+                        } else {
+                            resolve(result);
+                        }
                     }
                 }
             )
@@ -496,12 +461,7 @@ export class AsyncSeriesHook<T, R = void> extends AsyncTapHook<T, R> {
             // @ts-ignored
             args,
             {
-                onError(err) {
-                    asyncCb(err);
-                },
-                onComplete(_) {
-                    asyncCb(null, undefined);
-                }
+                onComplete: asyncCb,
             }
         )
     }
@@ -511,11 +471,12 @@ export class AsyncSeriesHook<T, R = void> extends AsyncTapHook<T, R> {
             this.invokeSeries(
                 args,
                 {
-                    onError(err) {
-                        reject(err);
-                    },
-                    onComplete(_) {
-                        resolve(undefined);
+                    onComplete(err: Error) {
+                        if (err != null) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
                     }
                 }
             )
@@ -532,12 +493,7 @@ export class AsyncSeriesBailHook<T, R> extends AsyncTapHook<T, R> {
             args,
             {
                 shouldBail: true,
-                onError(err) {
-                    asyncCb(err);
-                },
-                onComplete(result) {
-                    asyncCb(null, result);
-                }
+                onComplete: asyncCb,
             }
         )
     }
@@ -548,11 +504,12 @@ export class AsyncSeriesBailHook<T, R> extends AsyncTapHook<T, R> {
                 args,
                 {
                     shouldBail: true,
-                    onError(err) {
-                        reject(err);
-                    },
-                    onComplete(result) {
-                        resolve(result);
+                    onComplete(err, result) {
+                        if (err != null) {
+                            reject(err);
+                        } else {
+                            resolve(result);   
+                        }
                     }
                 }
             )
@@ -569,12 +526,7 @@ export class AsyncSeriesWaterfallHook<T, R> extends AsyncTapHook<T, R> {
             args,
             {
                 shouldWaterfall: true,
-                onError(err) {
-                    asyncCb(err);
-                },
-                onComplete(result) {
-                    asyncCb(null, result);
-                }
+                onComplete: asyncCb,
             }
         )
     }
@@ -585,11 +537,12 @@ export class AsyncSeriesWaterfallHook<T, R> extends AsyncTapHook<T, R> {
                 args,
                 {
                     shouldWaterfall: true,
-                    onError(err) {
-                        reject(err);
-                    },
-                    onComplete(result) {
-                        resolve(result);
+                    onComplete(err, result) {
+                        if (err != null) {
+                            reject(err);
+                        } else {
+                            resolve(result);
+                        }
                     }
                 }
             )

@@ -2,7 +2,10 @@
  * Created by samhwang1990@gmail.com.
  */
 
+import { AsyncParallelBailHook } from '../index';
+
 import isPromise from "./utils/isPromise";
+import {homedir} from "os";
 
 describe('AsyncParallelBailHook', () => {
     describe(
@@ -25,14 +28,14 @@ describe('AsyncParallelBailHook', () => {
                     
                     let args = [1, 2, 3];
 
-                    let invokePromise: Promise<undefined>;
+                    let invokePromise: Promise<number | string>;
                     let unTap;
 
-                    // TODO: create AsyncParallelBailHook
-                    // TODO: listen to hook with cb, update unTap;
-
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    let hook = new AsyncParallelBailHook<number[], number | string>();
+                    unTap = hook.tapAsync(cb);
                     
+                    invokePromise = hook.callPromise(...args);
+
                     await expect(invokePromise).rejects.toThrow(errFail);
                     expect(cb).toBeCalledTimes(1);
                     expect(cb.mock.calls[0][0]).toBe(1);
@@ -40,7 +43,8 @@ describe('AsyncParallelBailHook', () => {
                     expect(cb.mock.calls[0][2]).toBe(3);
                     expect(cb.mock.calls[0][3]).toBeFunction();
 
-                    // TODO: invoke hook with callPromise, update invokePromise
+                    invokePromise = hook.callPromise(...args);
+                    
                     await expect(invokePromise).resolves.toBe('foo');
                     expect(cb).toBeCalledTimes(2);
                     expect(cb.mock.calls[1][0]).toBe(1);
@@ -50,7 +54,7 @@ describe('AsyncParallelBailHook', () => {
                     
                     unTap();
 
-                    // TODO: invoke hook with callPromise
+                    await hook.callPromise(...args);
 
                     expect(cb).toBeCalledTimes(2);
                 }
@@ -81,12 +85,12 @@ describe('AsyncParallelBailHook', () => {
                 let args = [1, 2, 3];
                 
                 let unTap;
-                let invokePromise: Promise<undefined>;
+                let invokePromise: Promise<number | string>;
 
-                // TODO: create AsyncParallelBailHook
-                // TODO: listen to hook with cb, update unTap;
-
-                // TODO: invoke hook with callPromise, update invokePromise
+                let hook = new AsyncParallelBailHook<number[], number | string>();
+                unTap = hook.tapPromise(cb);
+                
+                invokePromise = hook.callPromise(...args);
                 
                 await expect(invokePromise).rejects.toThrow(errThrowingError);
                 expect(cb).toBeCalledTimes(1);
@@ -94,7 +98,7 @@ describe('AsyncParallelBailHook', () => {
                 expect(cb.mock.calls[0][1]).toBe(2);
                 expect(cb.mock.calls[0][2]).toBe(3);
 
-                // TODO: invoke hook with callPromise, update invokePromise
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).rejects.toThrow(errRejectedPromise);
                 expect(cb).toBeCalledTimes(2);
@@ -102,7 +106,7 @@ describe('AsyncParallelBailHook', () => {
                 expect(cb.mock.calls[1][1]).toBe(2);
                 expect(cb.mock.calls[1][2]).toBe(3);
 
-                // TODO: invoke hook with callPromise, update invokePromise
+                invokePromise = hook.callPromise(...args);
 
                 await expect(invokePromise).resolves.toBe('foo');
                 expect(cb).toBeCalledTimes(3);
@@ -111,8 +115,8 @@ describe('AsyncParallelBailHook', () => {
                 expect(cb.mock.calls[2][2]).toBe(3);
                 
                 unTap();
-                
-                // TODO: invoke hook with callPromise
+
+                await hook.callPromise(...args);
                 
                 expect(cb).toBeCalledTimes(3);
             });
@@ -124,9 +128,9 @@ describe('AsyncParallelBailHook', () => {
         () => {
             test('invocation calling return nothing', () => {
                 let invokeResult = null;
-
-                // TODO: create AsyncParallelBailHook
-                // TODO: invoke hook
+                
+                let hook = new AsyncParallelBailHook();
+                invokeResult = hook.callAsync(noop);
 
                 expect(invokeResult).toBeUndefined();
             });
@@ -144,7 +148,7 @@ describe('AsyncParallelBailHook', () => {
 
                 let promiseListener = jest.fn((...args) => {
                     immediateCalledResult.push(3);
-                    return new Promise((resolve => {
+                    return new Promise<void>((resolve => {
                         setTimeout(() => {
                             immediateCalledResult.push(4);
                             resolve();
@@ -159,12 +163,13 @@ describe('AsyncParallelBailHook', () => {
                     expect(immediateCalledResult[3]).toBe(4);
 
                     done();
-                }
+                };
 
-                // TODO: create AsyncParallelBailHook
-                // TODO: listen to hook with [asyncListener, promiseListener]
-
-                // TODO: invoke hook with invokeCb
+                let hook = new AsyncParallelBailHook();
+                hook.tapAsync(asyncListener);
+                hook.tapPromise(promiseListener);
+                
+                hook.callAsync(invokeCb);
             });
             
             test(
@@ -176,13 +181,6 @@ describe('AsyncParallelBailHook', () => {
                 (done) => {
                     let asyncErr = new Error('async error');
                     let promiseErr = new Error('promise error');
-
-                    let callbackCalled = {
-                        asyncComplete: false,
-                        promiseComplete: false,
-                        asyncFailed: false,
-                        promiseFailed: false,
-                    };
                     
                     let callbackDefer = {
                         asyncComplete: 0,
@@ -191,25 +189,14 @@ describe('AsyncParallelBailHook', () => {
                         promiseFailed: 0,
                     };
 
-                    function initCallbackCalledCache() {
-                        callbackCalled = {
-                            asyncComplete: false,
-                            promiseComplete: false,
-                            asyncFailed: false,
-                            promiseFailed: false,
-                        };
-                    }
-
                     let asyncCompleteCb = jest.fn((...args) => {
                         setTimeout(() => {
-                            callbackCalled.asyncComplete = true;
-                            args.pop()('async complete');
+                            args.pop()(null, 'async complete');
                         }, callbackDefer.asyncComplete);
                     });
                     let promiseCompleteCb = jest.fn((...args) => {
-                        return new Promise(resolve => {
+                        return new Promise<string>(resolve => {
                             setTimeout(() => {
-                                callbackCalled.promiseComplete = true;
                                 resolve('promise complete');
                             }, callbackDefer.promiseComplete);
                         })
@@ -217,95 +204,68 @@ describe('AsyncParallelBailHook', () => {
 
                     let asyncFailedCb = jest.fn((...args) => {
                         setTimeout(() => {
-                            callbackCalled.asyncFailed = true;
                             args.pop()(asyncErr);
                         }, callbackDefer.asyncFailed);
                     });
 
                     let promiseFailedCb = jest.fn((...args) => {
-                        return new Promise((resolve, reject) => {
+                        return new Promise<string>((resolve, reject) => {
                             setTimeout(() => {
-                                callbackCalled.promiseFailed = true;
                                 reject(promiseErr);
                             }, callbackDefer.promiseFailed)
                         });
                     });
 
                     let args = [1, 2, 3];
-
-                    // TODO: create AsyncParallelBailHook
-                    /**
-                     * TODO:
-                     *    listen to hook with [asyncCompleteCb, promiseCompleteCb, asyncFailedCb, promiseFailedCb]
-                     *    update unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete
-                     * */
-
+                    
+                    let hook = new AsyncParallelBailHook<[number, number, number], number | string>();
+                    hook.tapAsync(asyncCompleteCb);
+                    hook.tapPromise(promiseCompleteCb);
+                    hook.tapAsync(asyncFailedCb);
+                    hook.tapPromise(promiseFailedCb);
+                    
                     let invokeCb = jest.fn()
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(1);
                             expect(args[0]).toBe(asyncErr);
 
-                            expect(callbackCalled.asyncFailed).toBeTrue();
-
-                            expect(callbackCalled.asyncComplete).toBeFalse();
-                            expect(callbackCalled.promiseComplete).toBeFalse();
-                            expect(callbackCalled.promiseFailed).toBeFalse();
-
-                            initCallbackCalledCache();
                             callbackDefer = {
                                 asyncComplete: 10,
                                 promiseComplete: 10,
                                 asyncFailed: 10,
                                 promiseFailed: 0,
                             };
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(1);
                             expect(args[0]).toBe(promiseErr);
-
-                            expect(callbackCalled.promiseFailed).toBeTrue();
-
-                            expect(callbackCalled.asyncComplete).toBeFalse();
-                            expect(callbackCalled.promiseComplete).toBeFalse();
-                            expect(callbackCalled.asyncFailed).toBeFalse();
-
-                            initCallbackCalledCache();
+                            
                             callbackDefer = {
                                 asyncComplete: 0,
                                 promiseComplete: 10,
                                 asyncFailed: 10,
                                 promiseFailed: 10,
                             };
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(2);
                             expect(args[0]).toBeNil();
                             expect(args[1]).toBe('async complete');
 
-                            expect(callbackCalled.asyncComplete).toBeTrue();
-                            
-                            expect(callbackCalled.promiseComplete).toBeFalse();
-                            expect(callbackCalled.asyncFailed).toBeFalse();
-                            expect(callbackCalled.promiseFailed).toBeFalse();
-
-                            initCallbackCalledCache();
                             callbackDefer = {
                                 asyncComplete: 10,
                                 promiseComplete: 0,
                                 asyncFailed: 10,
                                 promiseFailed: 10,
                             };
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
                         .mockImplementationOnce((...args) => {
                             expect(args.length).toBe(2);
                             expect(args[0]).toBeNil();
                             expect(args[1]).toBe('promise complete');
-
-                            expect(callbackCalled.promiseComplete).toBeTrue();
-
-                            expect(callbackCalled.asyncComplete).toBeFalse();
-                            expect(callbackCalled.asyncFailed).toBeFalse();
-                            expect(callbackCalled.promiseFailed).toBeFalse();
                             
                             done();
                         });
@@ -316,12 +276,8 @@ describe('AsyncParallelBailHook', () => {
                         asyncFailed: 0,
                         promiseFailed: 10,
                     };
-
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-                    // TODO: invoke hook with args and invokeCb
-
+                    
+                    hook.callAsync.call(hook, ...args, invokeCb);
                 }
             )
         }
@@ -333,13 +289,13 @@ describe('AsyncParallelBailHook', () => {
             test('invocation return a promise', () => {
                 let invokeReturn;
 
-                // TODO: create AsyncParallelBailHooks
-                // TODO: invoke hook
+                let hook = new AsyncParallelBailHook();
+                invokeReturn = hook.callPromise();
 
                 expect(isPromise(invokeReturn)).toBeTrue();
             });
 
-            test('all listener was called in queue immediately with args', (done) => {
+            test('all listener was called in queue immediately with args', async () => {
                 let immediateCalledResult = [];
                 let asyncListener = jest.fn((...args) => {
                     let cb = args.pop();
@@ -360,194 +316,163 @@ describe('AsyncParallelBailHook', () => {
                     }));
                 });
 
-                // TODO: create AsyncParallelBailHook
-                // TODO: listen to hook with [asyncListener, promiseListener]
-
-                // TODO: invoke hook
+                let hook = new AsyncParallelBailHook();
+                hook.tapAsync(asyncListener);
+                hook.tapPromise(promiseListener);
+                
+                await hook.callPromise();
 
                 expect(immediateCalledResult[0]).toBe(1);
                 expect(immediateCalledResult[1]).toBe(3);
                 expect(immediateCalledResult[2]).toBe(2);
                 expect(immediateCalledResult[3]).toBe(4);
             });
-        }
-    );
-    
-    test(
-        closureName([
-            'if bailed with failed listener first, invocation failed by rejecting promise with error',
-            'if bailed with completed listener first, invocation completed by resolving promise',
-            'if no listener was bailed, invocation completed by resolving promise with `args[0]`',
-        ]),
-        async () => {
-            let asyncErr = new Error('async error');
-            let promiseErr = new Error('promise error');
 
-            let callbackCalled = {
-                asyncComplete: false,
-                promiseComplete: false,
-                asyncFailed: false,
-                promiseFailed: false,
-            };
+            test(
+                closureName([
+                    'if bailed with failed listener first, invocation failed by rejecting promise with error',
+                    'if bailed with completed listener first, invocation completed by resolving promise',
+                    'if no listener was bailed, invocation completed by resolving promise with `args[0]`',
+                ]),
+                async () => {
+                    let asyncErr = new Error('async error');
+                    let promiseErr = new Error('promise error');
 
-            let callbackDefer = {
-                asyncComplete: 0,
-                promiseComplete: 0,
-                asyncFailed: 0,
-                promiseFailed: 0,
-            };
+                    let callbackDefer = {
+                        asyncComplete: 0,
+                        promiseComplete: 0,
+                        asyncFailed: 0,
+                        promiseFailed: 0,
+                    };
 
-            function initCallbackCalledCache() {
-                callbackCalled = {
-                    asyncComplete: false,
-                    promiseComplete: false,
-                    asyncFailed: false,
-                    promiseFailed: false,
-                };
-            }
+                    let asyncCompleteCb = jest.fn((...args) => {
+                        setTimeout(() => {
+                            args.pop()(null, 'async complete');
+                        }, callbackDefer.asyncComplete);
+                    });
 
-            let asyncCompleteCb = jest.fn((...args) => {
-                setTimeout(() => {
-                    callbackCalled.asyncComplete = true;
-                    args.pop()(null, 'async complete');
-                }, callbackDefer.asyncComplete);
-            });
-            
-            let promiseCompleteCb = jest.fn((...args) => {
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        callbackCalled.promiseComplete = true;
-                        resolve('promise complete');
-                    }, callbackDefer.promiseComplete);
-                })
-            });
+                    let promiseCompleteCb = jest.fn((...args) => {
+                        return new Promise<string>(resolve => {
+                            setTimeout(() => {
+                                resolve('promise complete');
+                            }, callbackDefer.promiseComplete);
+                        })
+                    });
 
-            let asyncFailedCb = jest.fn((...args) => {
-                setTimeout(() => {
-                    callbackCalled.asyncFailed = true;
-                    args.pop()(asyncErr);
-                }, callbackDefer.asyncFailed);
-            });
+                    let asyncFailedCb = jest.fn((...args) => {
+                        setTimeout(() => {
+                            args.pop()(asyncErr);
+                        }, callbackDefer.asyncFailed);
+                    });
 
-            let promiseFailedCb = jest.fn((...args) => {
-                return new Promise((resolve, reject) => {
-                    setTimeout(() => {
-                        callbackCalled.promiseFailed = true;
-                        reject(promiseErr);
-                    }, callbackDefer.promiseFailed)
-                });
-            });
+                    let promiseFailedCb = jest.fn((...args) => {
+                        return new Promise<string>((resolve, reject) => {
+                            setTimeout(() => {
+                                reject(promiseErr);
+                            }, callbackDefer.promiseFailed)
+                        });
+                    });
 
-            let invokePromise;
+                    let args = [1, 2, 3];
+                    let invokePromise;
 
-            // TODO: create AsyncParallelHook
-            /**
-             * TODO:
-             *    listen to hook with [asyncCompleteCb, promiseCompleteCb, asyncFailedCb, promiseFailedCb]
-             *    update unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete
-             * */
+                    let hook = new AsyncParallelBailHook<[number, number, number], number | string>();
+                    hook.tapAsync(asyncCompleteCb);
+                    hook.tapPromise(promiseCompleteCb);
+                    hook.tapAsync(asyncFailedCb);
+                    hook.tapPromise(promiseFailedCb);
 
-            callbackDefer = {
-                asyncComplete: 10,
-                promiseComplete: 10,
-                asyncFailed: 0,
-                promiseFailed: 10,
-            };
+                    callbackDefer = {
+                        asyncComplete: 10,
+                        promiseComplete: 10,
+                        asyncFailed: 0,
+                        promiseFailed: 10,
+                    };
 
-            // TODO: invoke hook with args, update invokePromise
+                    invokePromise = hook.callPromise.apply(hook, args);
 
-            await exports(invokePromise).rejects.toThrow(asyncErr);
-            expect(callbackCalled.asyncFailed).toBeTrue();
+                    await expect(invokePromise).rejects.toThrow(asyncErr);
 
-            expect(callbackCalled.asyncComplete).toBeFalse();
-            expect(callbackCalled.promiseComplete).toBeFalse();
-            expect(callbackCalled.promiseFailed).toBeFalse();
+                    callbackDefer = {
+                        asyncComplete: 10,
+                        promiseComplete: 10,
+                        asyncFailed: 10,
+                        promiseFailed: 0,
+                    };
 
-            initCallbackCalledCache();
-            callbackDefer = {
-                asyncComplete: 10,
-                promiseComplete: 10,
-                asyncFailed: 10,
-                promiseFailed: 0,
-            };
+                    invokePromise = hook.callPromise.apply(hook, args);
 
-            // TODO: invoke hook with args, update invokePromise
+                    await expect(invokePromise).rejects.toThrow(promiseErr);
 
-            await exports(invokePromise).rejects.toThrow(promiseErr);
+                    callbackDefer = {
+                        asyncComplete: 0,
+                        promiseComplete: 10,
+                        asyncFailed: 10,
+                        promiseFailed: 10,
+                    };
 
-            expect(callbackCalled.promiseFailed).toBeTrue();
-            
-            expect(callbackCalled.asyncComplete).toBeFalse();
-            expect(callbackCalled.promiseComplete).toBeFalse();
-            expect(callbackCalled.asyncFailed).toBeFalse();
+                    invokePromise = hook.callPromise.apply(hook, args);
 
-            initCallbackCalledCache();
-            callbackDefer = {
-                asyncComplete: 0,
-                promiseComplete: 10,
-                asyncFailed: 10,
-                promiseFailed: 10,
-            };
+                    await expect(invokePromise).resolves.toBe('async complete');
 
-            // TODO: invoke hook with args, update invokePromise
+                    callbackDefer = {
+                        asyncComplete: 10,
+                        promiseComplete: 0,
+                        asyncFailed: 10,
+                        promiseFailed: 10,
+                    };
 
-            await exports(invokePromise).resolves.toBe('async complete');
+                    invokePromise = hook.callPromise.apply(hook, args);
 
-            expect(callbackCalled.asyncComplete).toBeTrue();
-            
-            expect(callbackCalled.promiseComplete).toBeFalse();
-            expect(callbackCalled.asyncFailed).toBeFalse();
-            expect(callbackCalled.promiseFailed).toBeFalse();
-
-            initCallbackCalledCache();
-            callbackDefer = {
-                asyncComplete: 10,
-                promiseComplete: 0,
-                asyncFailed: 10,
-                promiseFailed: 10,
-            };
-
-            // TODO: invoke hook with args, update invokePromise
-
-            await exports(invokePromise).resolves.toBe('promise complete');
-
-            expect(callbackCalled.promiseComplete).toBeTrue();
-
-            expect(callbackCalled.asyncComplete).toBeFalse();
-            expect(callbackCalled.asyncFailed).toBeFalse();
-            expect(callbackCalled.promiseFailed).toBeFalse();
+                    await expect(invokePromise).resolves.toBe('promise complete');
+                }
+            );
         }
     );
     
     describe(
         'clean all listeners',
         () => {
+            let hook: AsyncParallelBailHook<number[], string>;
             let asyncCb, promiseCb;
             let args;
 
             beforeEach(() => {
                 args = [1, 2, 3];
-                asyncCb = jest.fn((...args) => args.pop()('async complete'));
-                promiseCb = jest.fn(() => Promise.resolve('promise complete'));
+                asyncCb = jest.fn((...args) => {
+                    setTimeout(() => {
+                        args.pop()(null, 'async complete')
+                    }, 10);
+                });
+                promiseCb = jest.fn((...args) => {
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            resolve('promise complete');
+                        }, 10);  
+                    })
+                });
             });
 
             test(
                 '`callPromise(...args)` invoke nothing, promise resolved with `args[0]` immediately',
                 async () => {
                     let invokePromise;
-                    // TODO: create AsyncParallelBailHook
-                    // TODO: listen to hook with [asyncCb, promiseCb], update invokePromise;
-                    // TODO: invoke hook
 
-                    await expect(invokePromise).resolves.toBe('promise complete');
+                    hook = new AsyncParallelBailHook<number[], string>();
+                    hook.tapAsync(asyncCb);
+                    hook.tapPromise(promiseCb);
+                    
+                    invokePromise = hook.callPromise(...args);
+
+                    await expect(invokePromise).resolves.toBe('async complete');
                     expect(asyncCb).toBeCalledTimes(1);
                     expect(promiseCb).toBeCalledTimes(1);
 
                     asyncCb.mockClear();
                     promiseCb.mockClear();
 
-                    // TODO: exhaust hook
-                    // TODO: invoke hook
+                    hook.exhaust();
+                    invokePromise = hook.callPromise(...args);
 
                     await expect(invokePromise).resolves.toBe(1);
                     expect(asyncCb).not.toBeCalled();
@@ -559,10 +484,10 @@ describe('AsyncParallelBailHook', () => {
                 '`callAsync(...args, cb)` invoke nothing, `cb` called with `args[0]` immediately',
                 (done) => {
                     let invokeCb = jest.fn()
-                        .mockImplementationOnce((...args) => {
-                            expect(args.length).toBe(2);
-                            expect(args[0]).toBeNil();
-                            expect(args[1]).toBe('async complete');
+                        .mockImplementationOnce((...invokeResult) => {
+                            expect(invokeResult.length).toBe(2);
+                            expect(invokeResult[0]).toBeNil();
+                            expect(invokeResult[1]).toBe('async complete');
                             
                             expect(asyncCb).toBeCalledTimes(1);
                             expect(promiseCb).toBeCalledTimes(1);
@@ -570,13 +495,13 @@ describe('AsyncParallelBailHook', () => {
                             asyncCb.mockClear();
                             promiseCb.mockClear();
 
-                            // TODO: exhaust hook
-                            // TODO: invoke hook
+                            hook.exhaust();
+                            hook.callAsync.call(hook, ...args, invokeCb);
                         })
-                        .mockImplementationOnce((...args) => {
-                            expect(args.length).toBe(2);
-                            expect(args[0]).toBeNil();
-                            expect(args[1]).toBe(args[0]);
+                        .mockImplementationOnce((...invokeResult) => {
+                            expect(invokeResult.length).toBe(2);
+                            expect(invokeResult[0]).toBeNil();
+                            expect(invokeResult[1]).toBe(args[0]);
 
                             expect(asyncCb).not.toBeCalled();
                             expect(promiseCb).not.toBeCalled();
@@ -584,9 +509,10 @@ describe('AsyncParallelBailHook', () => {
                             done();
                         });
 
-                    // TODO: create AsyncParallelBailHook
-                    // TODO: listen to hook with [asyncCb, promiseCb]
-                    // TODO: invoke hook with invokeCb
+                    hook = new AsyncParallelBailHook<number[], string>();
+                    hook.tapAsync(asyncCb);
+                    hook.tapPromise(promiseCb);
+                    hook.callAsync.call(hook, ...args, invokeCb);
                 }
             )
         }
