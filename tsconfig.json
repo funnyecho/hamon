@@ -8,10 +8,15 @@
     ],
     "downlevelIteration": true,
     "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist"
   },
-  "files": [
-    "libs/index.ts"
+  "include": [
+    "libs/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "libs/__tests__"
   ]
 }

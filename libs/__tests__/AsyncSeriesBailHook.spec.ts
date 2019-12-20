@@ -2,487 +2,478 @@
  * Created by samhwang1990@gmail.com.
  */
 
-import { AsyncSeriesBailHook } from '../index';
+import "../../types/jest-global.d";
+import "../../types/jest-extend.d";
+
+import { AsyncSeriesBailHook } from "../index";
 
 import isPromise from "./utils/isPromise";
 
-describe('AsyncSeriesBailHook', () => {
-    describe(
-        '`unTap = tapAsync((...args, cb) => void)` to listen',
-        () => {
-            test(
-                closureName([
-                    'args is the invoked arguments',
-                    'last argument of tapAsync callback must be function type',
-                    'fail with `cb(error, undefined)`',
-                    'complete with `cb(undefined, value)`',
-                    '`unTap` can remove listener from hook'
-                ]),
-                async () => {
-                    let errFail = new Error('failed');
+describe("AsyncSeriesBailHook", () => {
+  describe("`unTap = tapAsync((...args, cb) => void)` to listen", () => {
+    test(
+      closureName([
+        "args is the invoked arguments",
+        "last argument of tapAsync callback must be function type",
+        "fail with `cb(error, undefined)`",
+        "complete with `cb(undefined, value)`",
+        "`unTap` can remove listener from hook"
+      ]),
+      async () => {
+        let errFail = new Error("failed");
 
-                    let cb = jest.fn()
-                        .mockImplementationOnce((...args) => args.pop()(errFail))
-                        .mockImplementation((...args) => args.pop()(null, 'foo'));
+        let cb = jest
+          .fn()
+          .mockImplementationOnce((...args) => args.pop()(errFail))
+          .mockImplementation((...args) => args.pop()(null, "foo"));
 
-                    let args = [1, 2, 3];
+        let args = [1, 2, 3];
 
-                    let invokePromise: Promise<string | number>;
-                    let unTap;
+        let invokePromise: Promise<string | number>;
+        let unTap;
 
-                    let hook = new AsyncSeriesBailHook<number[], string|number>();
-                    unTap = hook.tapAsync(cb);
-                    
-                    invokePromise = hook.callPromise(...args);
+        let hook = new AsyncSeriesBailHook<number[], string | number>();
+        unTap = hook.tapAsync(cb);
 
-                    await expect(invokePromise).rejects.toThrow(errFail);
+        invokePromise = hook.callPromise(...args);
 
-                    expect(cb).toBeCalledTimes(1);
-                    expect(cb.mock.calls[0][0]).toBe(1);
-                    expect(cb.mock.calls[0][1]).toBe(2);
-                    expect(cb.mock.calls[0][2]).toBe(3);
-                    expect(cb.mock.calls[0][3]).toBeFunction();
+        await expect(invokePromise).rejects.toThrow(errFail);
 
-                    invokePromise = hook.callPromise(...args);
+        expect(cb).toBeCalledTimes(1);
+        expect(cb.mock.calls[0][0]).toBe(1);
+        expect(cb.mock.calls[0][1]).toBe(2);
+        expect(cb.mock.calls[0][2]).toBe(3);
+        expect(cb.mock.calls[0][3]).toBeFunction();
 
-                    await expect(invokePromise).resolves.toBe('foo');
+        invokePromise = hook.callPromise(...args);
 
-                    expect(cb).toBeCalledTimes(2);
-                    expect(cb.mock.calls[0][0]).toBe(1);
-                    expect(cb.mock.calls[0][1]).toBe(2);
-                    expect(cb.mock.calls[0][2]).toBe(3);
-                    expect(cb.mock.calls[0][3]).toBeFunction();
+        await expect(invokePromise).resolves.toBe("foo");
 
-                    unTap();
+        expect(cb).toBeCalledTimes(2);
+        expect(cb.mock.calls[0][0]).toBe(1);
+        expect(cb.mock.calls[0][1]).toBe(2);
+        expect(cb.mock.calls[0][2]).toBe(3);
+        expect(cb.mock.calls[0][3]).toBeFunction();
 
-                    await hook.callPromise(...args);
+        unTap();
 
-                    expect(cb).toBeCalledTimes(2);
-                }
-            );
-        }
+        await hook.callPromise(...args);
+
+        expect(cb).toBeCalledTimes(2);
+      }
     );
-    
-    describe(
-        '`unTap = tapPromise(cb)` to listen',
-        () => {
-            test(
-                closureName([
-                    '`cb` was called with invoked arguments',
-                    '`cb` can return value in any type which will be wrapped as promise',
-                    'fail with throw error or rejected promise',
-                    'complete with resolved promise',
-                    '`unTap` can remove listener from hook'
-                ]),
-                async () => {
-                    let errThrowingError= new Error('throw error');
-                    let errRejectedPromise = new Error('rejected promise');
+  });
 
-                    let cb = jest.fn()
-                        .mockImplementationOnce(() => {
-                            throw errThrowingError;
-                        })
-                        .mockRejectedValueOnce(errRejectedPromise)
-                        .mockResolvedValue('foo');
+  describe("`unTap = tapPromise(cb)` to listen", () => {
+    test(
+      closureName([
+        "`cb` was called with invoked arguments",
+        "`cb` can return value in any type which will be wrapped as promise",
+        "fail with throw error or rejected promise",
+        "complete with resolved promise",
+        "`unTap` can remove listener from hook"
+      ]),
+      async () => {
+        let errThrowingError = new Error("throw error");
+        let errRejectedPromise = new Error("rejected promise");
 
-                    let args = [1, 2, 3];
+        let cb = jest
+          .fn()
+          .mockImplementationOnce(() => {
+            throw errThrowingError;
+          })
+          .mockRejectedValueOnce(errRejectedPromise)
+          .mockResolvedValue("foo");
 
-                    let unTap;
-                    let invokePromise: Promise<string|number>;
+        let args = [1, 2, 3];
 
-                    let hook = new AsyncSeriesBailHook<number[], string|number>();
-                    unTap = hook.tapPromise(cb);
-                    
-                    invokePromise = hook.callPromise(...args);
+        let unTap;
+        let invokePromise: Promise<string | number>;
 
-                    await expect(invokePromise).rejects.toThrow(errThrowingError);
-                    expect(cb).toBeCalledTimes(1);
-                    expect(cb.mock.calls[0][0]).toBe(1);
-                    expect(cb.mock.calls[0][1]).toBe(2);
-                    expect(cb.mock.calls[0][2]).toBe(3);
+        let hook = new AsyncSeriesBailHook<number[], string | number>();
+        unTap = hook.tapPromise(cb);
 
-                    invokePromise = hook.callPromise(...args);
+        invokePromise = hook.callPromise(...args);
 
-                    await expect(invokePromise).rejects.toThrow(errRejectedPromise);
-                    expect(cb).toBeCalledTimes(2);
-                    expect(cb.mock.calls[1][0]).toBe(1);
-                    expect(cb.mock.calls[1][1]).toBe(2);
-                    expect(cb.mock.calls[1][2]).toBe(3);
+        await expect(invokePromise).rejects.toThrow(errThrowingError);
+        expect(cb).toBeCalledTimes(1);
+        expect(cb.mock.calls[0][0]).toBe(1);
+        expect(cb.mock.calls[0][1]).toBe(2);
+        expect(cb.mock.calls[0][2]).toBe(3);
 
-                    invokePromise = hook.callPromise(...args);
+        invokePromise = hook.callPromise(...args);
 
-                    await expect(invokePromise).resolves.toBe('foo');
-                    expect(cb).toBeCalledTimes(3);
-                    expect(cb.mock.calls[2][0]).toBe(1);
-                    expect(cb.mock.calls[2][1]).toBe(2);
-                    expect(cb.mock.calls[2][2]).toBe(3);
+        await expect(invokePromise).rejects.toThrow(errRejectedPromise);
+        expect(cb).toBeCalledTimes(2);
+        expect(cb.mock.calls[1][0]).toBe(1);
+        expect(cb.mock.calls[1][1]).toBe(2);
+        expect(cb.mock.calls[1][2]).toBe(3);
 
-                    unTap();
+        invokePromise = hook.callPromise(...args);
 
-                    await hook.callPromise(...args);
+        await expect(invokePromise).resolves.toBe("foo");
+        expect(cb).toBeCalledTimes(3);
+        expect(cb.mock.calls[2][0]).toBe(1);
+        expect(cb.mock.calls[2][1]).toBe(2);
+        expect(cb.mock.calls[2][2]).toBe(3);
 
-                    expect(cb).toBeCalledTimes(3);
-                }
-            )
-        }
+        unTap();
+
+        await hook.callPromise(...args);
+
+        expect(cb).toBeCalledTimes(3);
+      }
     );
+  });
 
-    describe(
-        '`callAsync(...args, cb)` to invoke',
-        () => {
-            test('invocation calling return nothing', () => {
-                let invokeResult;
-                
-                invokeResult = new AsyncSeriesBailHook().callAsync(noop);
+  describe("`callAsync(...args, cb)` to invoke", () => {
+    test("invocation calling return nothing", () => {
+      let invokeResult;
 
-                expect(invokeResult).toBeUndefined();
-            });
+      invokeResult = new AsyncSeriesBailHook().callAsync(noop);
 
-            test('all listener was called in queue with args', (done) => {
-                let seriesCalledResult = [];
-                let asyncListener = jest.fn((...args) => {
-                    let cb = args.pop();
-                    seriesCalledResult.push(1);
-                    setTimeout(() => {
-                        seriesCalledResult.push(2);
-                        cb();
-                    }, 50);
-                });
+      expect(invokeResult).toBeUndefined();
+    });
 
-                let promiseListener = jest.fn((...args) => {
-                    seriesCalledResult.push(3);
-                    return new Promise((resolve => {
-                        setTimeout(() => {
-                            seriesCalledResult.push(4);
-                            resolve();
-                        }, 100);
-                    }));
-                });
+    test("all listener was called in queue with args", done => {
+      let seriesCalledResult = [];
+      let asyncListener = jest.fn((...args) => {
+        let cb = args.pop();
+        seriesCalledResult.push(1);
+        setTimeout(() => {
+          seriesCalledResult.push(2);
+          cb();
+        }, 50);
+      });
 
-                let invokeCb = function() {
-                    expect(seriesCalledResult[0]).toBe(1);
-                    expect(seriesCalledResult[1]).toBe(2);
-                    expect(seriesCalledResult[2]).toBe(3);
-                    expect(seriesCalledResult[3]).toBe(4);
+      let promiseListener = jest.fn((...args) => {
+        seriesCalledResult.push(3);
+        return new Promise(resolve => {
+          setTimeout(() => {
+            seriesCalledResult.push(4);
+            resolve();
+          }, 100);
+        });
+      });
 
-                    done();
-                };
-                
-                let hook = new AsyncSeriesBailHook();
-                hook.tapAsync(asyncListener);
-                hook.tapPromise(promiseListener);
-                
-                hook.callAsync(invokeCb);
-            });
+      let invokeCb = function() {
+        expect(seriesCalledResult[0]).toBe(1);
+        expect(seriesCalledResult[1]).toBe(2);
+        expect(seriesCalledResult[2]).toBe(3);
+        expect(seriesCalledResult[3]).toBe(4);
 
-            test(
-                closureName([
-                    'if listener failed, invocation immediately bailed by calling `cb(error)`',
-                    'if listener bailed, invocation immediately bailed by calling `cb(undefined, value)`',
-                    'if no listener was bailed, invocation bailed with args[0] by calling `cb(undefined, args[0])`',
-                ]),
-                (done) => {
-                    let args = [1, 2];
+        done();
+      };
 
-                    let asyncErr = new Error('async error');
-                    let promiseErr = new Error('promise error');
+      let hook = new AsyncSeriesBailHook();
+      hook.tapAsync(asyncListener);
+      hook.tapPromise(promiseListener);
 
-                    let asyncCompleteCb = jest.fn((...args) => {
-                        setTimeout(() => {
-                            args.pop()(null, 'async complete');
-                        }, 10);
-                    });
-                    let promiseCompleteCb = jest.fn((...args) => {
-                        return new Promise<void>(resolve => {
-                            setTimeout(() => {
-                                resolve();
-                            }, 10);
-                        })
-                    });
-                    let asyncFailedCb = jest.fn((...args) => {
-                        setTimeout(() => {
-                            args.pop()(asyncErr);
-                        }, 10);
-                    });
-                    let promiseFailedCb = jest.fn((...args) => {
-                        return new Promise<void>((resolve, reject) => {
-                            setTimeout(() => {
-                                reject(promiseErr);
-                            }, 10)
-                        });
-                    });
+      hook.callAsync(invokeCb);
+    });
 
-                    let unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete;
-                    
-                    let hook = new AsyncSeriesBailHook<number[], string|number>();
+    test(
+      closureName([
+        "if listener failed, invocation immediately bailed by calling `cb(error)`",
+        "if listener bailed, invocation immediately bailed by calling `cb(undefined, value)`",
+        "if no listener was bailed, invocation bailed with args[0] by calling `cb(undefined, args[0])`"
+      ]),
+      done => {
+        let args = [1, 2];
 
-                    unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
-                    unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
-                    unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
-                    unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
+        let asyncErr = new Error("async error");
+        let promiseErr = new Error("promise error");
 
-                    let invokeCb = jest.fn()
-                        .mockImplementationOnce((...invokeResult) => {
-                            expect(invokeResult.length).toBe(1);
-                            expect(invokeResult[0]).toBe(asyncErr);
+        let asyncCompleteCb = jest.fn((...args) => {
+          setTimeout(() => {
+            args.pop()(null, "async complete");
+          }, 10);
+        });
+        let promiseCompleteCb = jest.fn((...args) => {
+          return new Promise<void>(resolve => {
+            setTimeout(() => {
+              resolve();
+            }, 10);
+          });
+        });
+        let asyncFailedCb = jest.fn((...args) => {
+          setTimeout(() => {
+            args.pop()(asyncErr);
+          }, 10);
+        });
+        let promiseFailedCb = jest.fn((...args) => {
+          return new Promise<void>((resolve, reject) => {
+            setTimeout(() => {
+              reject(promiseErr);
+            }, 10);
+          });
+        });
 
-                            expect(asyncFailedCb).toBeCalled();
+        let unTapAsyncFailed,
+          unTapPromiseFailed,
+          unTapAsyncComplete,
+          unTapPromiseComplete;
 
-                            expect(promiseFailedCb).not.toBeCalled();
-                            expect(asyncCompleteCb).not.toBeCalled();
-                            expect(promiseCompleteCb).not.toBeCalled();
+        let hook = new AsyncSeriesBailHook<number[], string | number>();
 
-                            unTapAsyncFailed();
-                            hook.callAsync.call(hook, ...args, invokeCb);
-                        })
-                        .mockImplementationOnce((...invokeResult) => {
-                            expect(invokeResult.length).toBe(1);
-                            expect(invokeResult[0]).toBe(promiseErr);
+        unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
+        unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
+        unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
+        unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
 
-                            expect(promiseFailedCb).toBeCalled();
+        let invokeCb = jest
+          .fn()
+          .mockImplementationOnce((...invokeResult) => {
+            expect(invokeResult.length).toBe(1);
+            expect(invokeResult[0]).toBe(asyncErr);
 
-                            expect(asyncCompleteCb).not.toBeCalled();
-                            expect(promiseCompleteCb).not.toBeCalled();
+            expect(asyncFailedCb).toBeCalled();
 
-                            unTapPromiseFailed();
-                            hook.callAsync.call(hook, ...args, invokeCb);
-                        })
-                        .mockImplementationOnce((...invokeResult) => {
-                            expect(invokeResult.length).toBe(2);
-                            expect(invokeResult[0]).toBeNil();
-                            expect(invokeResult[1]).toBe('async complete');
+            expect(promiseFailedCb).not.toBeCalled();
+            expect(asyncCompleteCb).not.toBeCalled();
+            expect(promiseCompleteCb).not.toBeCalled();
 
-                            expect(asyncCompleteCb).toBeCalled();
+            unTapAsyncFailed();
+            hook.callAsync.call(hook, ...args, invokeCb);
+          })
+          .mockImplementationOnce((...invokeResult) => {
+            expect(invokeResult.length).toBe(1);
+            expect(invokeResult[0]).toBe(promiseErr);
 
-                            expect(promiseCompleteCb).not.toBeCalled();
+            expect(promiseFailedCb).toBeCalled();
 
-                            unTapAsyncComplete();
-                            hook.callAsync.call(hook, ...args, invokeCb);
-                        })
-                        .mockImplementationOnce((...invokeResult) => {
-                            expect(invokeResult.length).toBe(2);
-                            expect(invokeResult[0]).toBeNil();
-                            expect(invokeResult[1]).toBe(args[0]);
+            expect(asyncCompleteCb).not.toBeCalled();
+            expect(promiseCompleteCb).not.toBeCalled();
 
-                            expect(promiseCompleteCb).toBeCalled();
+            unTapPromiseFailed();
+            hook.callAsync.call(hook, ...args, invokeCb);
+          })
+          .mockImplementationOnce((...invokeResult) => {
+            expect(invokeResult.length).toBe(2);
+            expect(invokeResult[0]).toBeNil();
+            expect(invokeResult[1]).toBe("async complete");
 
-                            done();
-                        });
+            expect(asyncCompleteCb).toBeCalled();
 
-                    hook.callAsync.call(hook, ...args, invokeCb);
-                }
-            )
-        }
+            expect(promiseCompleteCb).not.toBeCalled();
+
+            unTapAsyncComplete();
+            hook.callAsync.call(hook, ...args, invokeCb);
+          })
+          .mockImplementationOnce((...invokeResult) => {
+            expect(invokeResult.length).toBe(2);
+            expect(invokeResult[0]).toBeNil();
+            expect(invokeResult[1]).toBe(args[0]);
+
+            expect(promiseCompleteCb).toBeCalled();
+
+            done();
+          });
+
+        hook.callAsync.call(hook, ...args, invokeCb);
+      }
     );
-    
-    describe(
-        '`callPromise(...args, cb)` to invoke',
-        () => {
-            test('invocation return a promise', () => {
-                let invokeReturn = new AsyncSeriesBailHook().callPromise();
+  });
 
-                expect(isPromise(invokeReturn)).toBeTrue();
-            });
+  describe("`callPromise(...args, cb)` to invoke", () => {
+    test("invocation return a promise", () => {
+      let invokeReturn = new AsyncSeriesBailHook().callPromise();
 
-            test('all listener was called in queue with args', async () => {
-                let seriesCalledResult = [];
-                let asyncListener = jest.fn((...args) => {
-                    let cb = args.pop();
-                    seriesCalledResult.push(1);
-                    setTimeout(() => {
-                        seriesCalledResult.push(2);
-                        cb();
-                    }, 50);
-                });
+      expect(isPromise(invokeReturn)).toBeTrue();
+    });
 
-                let promiseListener = jest.fn((...args) => {
-                    seriesCalledResult.push(3);
-                    return new Promise((resolve => {
-                        setTimeout(() => {
-                            seriesCalledResult.push(4);
-                            resolve();
-                        }, 100);
-                    }));
-                });
+    test("all listener was called in queue with args", async () => {
+      let seriesCalledResult = [];
+      let asyncListener = jest.fn((...args) => {
+        let cb = args.pop();
+        seriesCalledResult.push(1);
+        setTimeout(() => {
+          seriesCalledResult.push(2);
+          cb();
+        }, 50);
+      });
 
-                let hook = new AsyncSeriesBailHook();
-                hook.tapAsync(asyncListener);
-                hook.tapPromise(promiseListener);
-                
-                await hook.callPromise();
+      let promiseListener = jest.fn((...args) => {
+        seriesCalledResult.push(3);
+        return new Promise(resolve => {
+          setTimeout(() => {
+            seriesCalledResult.push(4);
+            resolve();
+          }, 100);
+        });
+      });
 
-                expect(seriesCalledResult[0]).toBe(1);
-                expect(seriesCalledResult[1]).toBe(2);
-                expect(seriesCalledResult[2]).toBe(3);
-                expect(seriesCalledResult[3]).toBe(4);
-            });
-            
-            test(
-                closureName([
-                    'if listener failed, invocation immediately bailed by rejecting promise with error',
-                    'if listener bailed, invocation immediately bailed by resolving promise',
-                    'if no listener was bailed, invocation completed by resolving promise with `args[0]`'
-                ]),
-                async () => {
-                    let args = [1, 2];
+      let hook = new AsyncSeriesBailHook();
+      hook.tapAsync(asyncListener);
+      hook.tapPromise(promiseListener);
 
-                    let asyncErr = new Error('async error');
-                    let promiseErr = new Error('promise error');
+      await hook.callPromise();
 
-                    let asyncCompleteCb = jest.fn((...args) => {
-                        setTimeout(() => {
-                            args.pop()(null, 'async complete');
-                        }, 10);
-                    });
-                    let promiseCompleteCb = jest.fn((...args) => {
-                        return new Promise<void>(resolve => {
-                            setTimeout(() => {
-                                resolve();
-                            }, 10);
-                        })
-                    });
-                    let asyncFailedCb = jest.fn((...args) => {
-                        setTimeout(() => {
-                            args.pop()(asyncErr);
-                        }, 10);
-                    });
-                    let promiseFailedCb = jest.fn((...args) => {
-                        return new Promise<void>((resolve, reject) => {
-                            setTimeout(() => {
-                                reject(promiseErr);
-                            }, 10)
-                        });
-                    });
+      expect(seriesCalledResult[0]).toBe(1);
+      expect(seriesCalledResult[1]).toBe(2);
+      expect(seriesCalledResult[2]).toBe(3);
+      expect(seriesCalledResult[3]).toBe(4);
+    });
 
-                    let unTapAsyncFailed, unTapPromiseFailed, unTapAsyncComplete, unTapPromiseComplete;
-                    let invokePromise;
+    test(
+      closureName([
+        "if listener failed, invocation immediately bailed by rejecting promise with error",
+        "if listener bailed, invocation immediately bailed by resolving promise",
+        "if no listener was bailed, invocation completed by resolving promise with `args[0]`"
+      ]),
+      async () => {
+        let args = [1, 2];
 
-                    let hook = new AsyncSeriesBailHook<number[], string|number>();
-                    unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
-                    unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
-                    unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
-                    unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
+        let asyncErr = new Error("async error");
+        let promiseErr = new Error("promise error");
 
-                    invokePromise = hook.callPromise(...args);
+        let asyncCompleteCb = jest.fn((...args) => {
+          setTimeout(() => {
+            args.pop()(null, "async complete");
+          }, 10);
+        });
+        let promiseCompleteCb = jest.fn((...args) => {
+          return new Promise<void>(resolve => {
+            setTimeout(() => {
+              resolve();
+            }, 10);
+          });
+        });
+        let asyncFailedCb = jest.fn((...args) => {
+          setTimeout(() => {
+            args.pop()(asyncErr);
+          }, 10);
+        });
+        let promiseFailedCb = jest.fn((...args) => {
+          return new Promise<void>((resolve, reject) => {
+            setTimeout(() => {
+              reject(promiseErr);
+            }, 10);
+          });
+        });
 
-                    await expect(invokePromise).rejects.toThrow(asyncErr);
+        let unTapAsyncFailed,
+          unTapPromiseFailed,
+          unTapAsyncComplete,
+          unTapPromiseComplete;
+        let invokePromise;
 
-                    expect(asyncFailedCb).toBeCalled();
+        let hook = new AsyncSeriesBailHook<number[], string | number>();
+        unTapAsyncFailed = hook.tapAsync(asyncFailedCb);
+        unTapPromiseFailed = hook.tapPromise(promiseFailedCb);
+        unTapAsyncComplete = hook.tapAsync(asyncCompleteCb);
+        unTapPromiseComplete = hook.tapPromise(promiseCompleteCb);
 
-                    expect(promiseFailedCb).not.toBeCalled();
-                    expect(asyncCompleteCb).not.toBeCalled();
-                    expect(promiseCompleteCb).not.toBeCalled();
+        invokePromise = hook.callPromise(...args);
 
-                    unTapAsyncFailed();
+        await expect(invokePromise).rejects.toThrow(asyncErr);
 
-                    invokePromise = hook.callPromise(...args);
+        expect(asyncFailedCb).toBeCalled();
 
-                    await expect(invokePromise).rejects.toThrow(promiseErr);
+        expect(promiseFailedCb).not.toBeCalled();
+        expect(asyncCompleteCb).not.toBeCalled();
+        expect(promiseCompleteCb).not.toBeCalled();
 
-                    expect(promiseFailedCb).toBeCalled();
+        unTapAsyncFailed();
 
-                    expect(asyncCompleteCb).not.toBeCalled();
-                    expect(promiseCompleteCb).not.toBeCalled();
+        invokePromise = hook.callPromise(...args);
 
-                    unTapPromiseFailed();
+        await expect(invokePromise).rejects.toThrow(promiseErr);
 
-                    invokePromise = hook.callPromise(...args);
+        expect(promiseFailedCb).toBeCalled();
 
-                    await expect(invokePromise).resolves.toBe('async complete');
+        expect(asyncCompleteCb).not.toBeCalled();
+        expect(promiseCompleteCb).not.toBeCalled();
 
-                    expect(asyncCompleteCb).toBeCalled();
+        unTapPromiseFailed();
 
-                    expect(promiseCompleteCb).not.toBeCalled();
+        invokePromise = hook.callPromise(...args);
 
-                    unTapAsyncComplete();
+        await expect(invokePromise).resolves.toBe("async complete");
 
-                    invokePromise = hook.callPromise(...args);
+        expect(asyncCompleteCb).toBeCalled();
 
-                    await expect(invokePromise).resolves.toBe(args[0]);
+        expect(promiseCompleteCb).not.toBeCalled();
 
-                    expect(promiseCompleteCb).toBeCalled();
-                }
-            )
-        }
+        unTapAsyncComplete();
+
+        invokePromise = hook.callPromise(...args);
+
+        await expect(invokePromise).resolves.toBe(args[0]);
+
+        expect(promiseCompleteCb).toBeCalled();
+      }
     );
+  });
 
+  describe("clean all listeners", () => {
+    let asyncCb, promiseCb;
+    let args;
+    let unTapToAsync, unTapToPromise;
 
-    describe(
-        'clean all listeners',
-        () => {
-            let asyncCb, promiseCb;
-            let args;
-            let unTapToAsync, unTapToPromise;
+    beforeEach(() => {
+      args = [1, 2];
+      asyncCb = jest.fn((...args) => args.pop()());
+      promiseCb = jest.fn(() => Promise.resolve());
+    });
 
-            beforeEach(() => {
-                args = [1, 2];
-                asyncCb = jest.fn((...args) => args.pop()());
-                promiseCb = jest.fn(() => Promise.resolve());
-            });
+    test("`callPromise(...args)` invoke nothing, promise resolved with void immediately", async () => {
+      let invokePromise;
+      let hook = new AsyncSeriesBailHook<number[], number>();
 
-            test(
-                '`callPromise(...args)` invoke nothing, promise resolved with void immediately',
-                async () => {
-                    let invokePromise;
-                    let hook = new AsyncSeriesBailHook<number[], number>();
-                    
-                    hook.tapAsync(asyncCb);
-                    hook.tapPromise(promiseCb);
-                    
-                    invokePromise = hook.callPromise(...args);
+      hook.tapAsync(asyncCb);
+      hook.tapPromise(promiseCb);
 
-                    await expect(invokePromise).resolves.toBe(args[0]);
-                    expect(asyncCb).toBeCalledTimes(1);
-                    expect(promiseCb).toBeCalledTimes(1);
+      invokePromise = hook.callPromise(...args);
 
-                    asyncCb.mockClear();
-                    promiseCb.mockClear();
+      await expect(invokePromise).resolves.toBe(args[0]);
+      expect(asyncCb).toBeCalledTimes(1);
+      expect(promiseCb).toBeCalledTimes(1);
 
-                    hook.exhaust();
-                    invokePromise = hook.callPromise(...args);
+      asyncCb.mockClear();
+      promiseCb.mockClear();
 
-                    await expect(invokePromise).resolves.toBe(args[0]);
-                    expect(asyncCb).not.toBeCalled();
-                    expect(promiseCb).not.toBeCalled();
-                }
-            );
+      hook.exhaust();
+      invokePromise = hook.callPromise(...args);
 
-            test(
-                '`callAsync(...args, cb)` invoke nothing, `cb` called with void immediately',
-                (done) => {
-                    let invokeCb = jest.fn()
-                        .mockImplementationOnce((...invokeResult) => {
-                            expect(invokeResult.length).toBe(2);
-                            expect(invokeResult[0]).toBeNil();
-                            expect(invokeResult[1]).toBe(args[0]);
-                            
-                            expect(asyncCb).toBeCalledTimes(1);
-                            expect(promiseCb).toBeCalledTimes(1);
+      await expect(invokePromise).resolves.toBe(args[0]);
+      expect(asyncCb).not.toBeCalled();
+      expect(promiseCb).not.toBeCalled();
+    });
 
-                            asyncCb.mockClear();
-                            promiseCb.mockClear();
+    test("`callAsync(...args, cb)` invoke nothing, `cb` called with void immediately", done => {
+      let invokeCb = jest
+        .fn()
+        .mockImplementationOnce((...invokeResult) => {
+          expect(invokeResult.length).toBe(2);
+          expect(invokeResult[0]).toBeNil();
+          expect(invokeResult[1]).toBe(args[0]);
 
-                            hook.exhaust();
-                            hook.callAsync.call(hook, ...args, invokeCb);
-                        })
-                        .mockImplementationOnce((...invokeResult) => {
-                            expect(invokeResult.length).toBe(2);
-                            expect(invokeResult[0]).toBeNil();
-                            expect(invokeResult[1]).toBe(args[0]);
+          expect(asyncCb).toBeCalledTimes(1);
+          expect(promiseCb).toBeCalledTimes(1);
 
-                            expect(asyncCb).not.toBeCalled();
-                            expect(promiseCb).not.toBeCalled();
+          asyncCb.mockClear();
+          promiseCb.mockClear();
 
-                            done();
-                        });
+          hook.exhaust();
+          hook.callAsync.call(hook, ...args, invokeCb);
+        })
+        .mockImplementationOnce((...invokeResult) => {
+          expect(invokeResult.length).toBe(2);
+          expect(invokeResult[0]).toBeNil();
+          expect(invokeResult[1]).toBe(args[0]);
 
-                    let hook = new AsyncSeriesBailHook<number[], number>();
-                    hook.tapPromise(promiseCb);
-                    hook.tapAsync(asyncCb);
-                    
-                    hook.callAsync.call(hook, ...args, invokeCb);
-                }
-            )
-        }
-    );
+          expect(asyncCb).not.toBeCalled();
+          expect(promiseCb).not.toBeCalled();
+
+          done();
+        });
+
+      let hook = new AsyncSeriesBailHook<number[], number>();
+      hook.tapPromise(promiseCb);
+      hook.tapAsync(asyncCb);
+
+      hook.callAsync.call(hook, ...args, invokeCb);
+    });
+  });
 });

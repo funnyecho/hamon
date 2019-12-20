@@ -4,5 +4,6 @@
 node_modules
 coverage
 dist
+api_report_local
 
 package-lock.json
