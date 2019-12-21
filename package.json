@@ -1,6 +1,6 @@
 {
   "name": "@funnyecho/hamon",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Event-driven architecture with varying types of hook",
   "jest": {
     "testRegex": "/config/jest/dont-run-jest-directly\\.js$"
@@ -22,15 +22,13 @@
     "@types/jest": "^24.0.23",
     "@types/node": "^12.12.17",
     "cross-env": "^6.0.3",
+    "husky": "^3.1.0",
     "jest": "^24.9.0",
     "jest-extended": "^0.11.2",
+    "lint-staged": "^9.5.0",
+    "prettier": "^1.19.1",
     "ts-jest": "^24.2.0",
     "typescript": "^3.7.3"
-  },
-  "dependencies": {
-    "husky": "^3.1.0",
-    "lint-staged": "^9.5.0",
-    "prettier": "^1.19.1"
   },
   "husky": {
     "hooks": {
