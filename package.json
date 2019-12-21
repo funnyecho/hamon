@@ -3,17 +3,17 @@
   "version": "0.1.0",
   "description": "Event-driven architecture with varying types of hook",
   "jest": {
-    "testRegex": "/scripts/jest/dont-run-jest-directly\\.js$"
+    "testRegex": "/config/jest/dont-run-jest-directly\\.js$"
   },
   "main": "./dist/index.js",
   "types": "./dist/hamon.d.ts",
   "files": [
     "dist"
   ],
-  "prettier": "./scripts/prettier/.prettierrc.yml",
+  "prettier": "./config/.prettierrc.yml",
   "scripts": {
-    "test": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js",
-    "test:coverage": "cross-env NODE_ENV=development jest --config ./scripts/jest/config.source.js --coverage",
+    "test": "cross-env NODE_ENV=development jest --config ./config/jest/config.source.js",
+    "test:coverage": "cross-env NODE_ENV=development jest --config ./config/jest/config.source.js --coverage",
     "build": "tsc"
   },
   "author": "SamHwang1990 @funnyecho",
@@ -47,5 +47,12 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/funnyecho/hamon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/funnyecho/hamon/issues"
+  },
+  "homepage": "https://github.com/funnyecho/hamon#readme",
+  "directories": {
+    "doc": "docs"
   }
 }

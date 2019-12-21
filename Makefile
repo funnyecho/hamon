@@ -1,4 +1,4 @@
-PROJECT := hamon
+PROJECT := @funnyecho/hamon
 
 BUILD_DIST := dist/
 
@@ -15,7 +15,7 @@ test-coverage:
 	@npm test:coverage
 	
 api-extract: build
-	@api-extractor run --local --verbose -c scripts/api-extractor/config.json
+	@api-extractor run --local --verbose -c config/api-extractor.json
 	
 api-document: api-extract
-	 @api-documenter markdown -i ./api_report_local -o ./docs
+	 @api-documenter generate -i ./api_report_local -o ./docs

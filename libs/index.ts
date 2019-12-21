@@ -184,14 +184,29 @@ function invokeSynchronously<T, R>(
  * @param T - tuple types of calling arguments
  * @param R - returning value type of calling
  *
- * @internal
+ * @public
  * */
-class Hook<T, R> {
+export abstract class Hook<T, R> {
   private tapIdSeed = 0;
 
+  /**
+   * @internal
+   * */
   protected readonly bucketHashcode: IHookBucketHashcode<T>;
+
+  /**
+   * @internal
+   * */
   protected readonly presetTapBucket: Set<ITapID>;
+
+  /**
+   * @internal
+   * */
   protected readonly tapBuckets: Map<IHookBucketType, Set<ITapID>>;
+
+  /**
+   * @internal
+   * */
   protected readonly tapOptionsCache: Map<ITapID, ITapOptions<T, R>>;
 
   /**
@@ -220,7 +235,7 @@ class Hook<T, R> {
    * clear all tapping from hook
    *
    * @remarks
-   * The same as `exhaust` {@link exhaust}
+   * The same as `exhaust` {@link Hook.exhaust}
    *
    * @privateRemarks
    * call `exhaust`
@@ -231,6 +246,9 @@ class Hook<T, R> {
     this.exhaust();
   }
 
+  /**
+   * @internal
+   * */
   protected insertSyncTap(
     fn: ISyncTapCallback<T, R>,
     bucket?: IHookBucketType
@@ -238,6 +256,9 @@ class Hook<T, R> {
     return this.tapping(fn, bucket);
   }
 
+  /**
+   * @internal
+   * */
   protected insertAsyncTap(
     fn: IAsyncTapCallback<T, R>,
     bucket?: IHookBucketType
@@ -255,6 +276,9 @@ class Hook<T, R> {
     return this.tapping(asyncTapFn, bucket);
   }
 
+  /**
+   * @internal
+   * */
   protected insertPromiseTap(
     fn: IPromiseTapCallback<T, R | void>,
     bucket?: IHookBucketType
@@ -280,6 +304,9 @@ class Hook<T, R> {
     return this.tapping(promiseTapFn, bucket);
   }
 
+  /**
+   * @internal
+   * */
   protected invokeSeries(
     args: AsArray<T>,
     observer?: IInvokeSeriesObserver<T, R>
@@ -296,6 +323,9 @@ class Hook<T, R> {
     );
   }
 
+  /**
+   * @internal
+   * */
   protected invokeParallel(
     args: AsArray<T>,
     observer?: IInvokeParallelObserver<T, R>
@@ -308,6 +338,9 @@ class Hook<T, R> {
     invokeParallel<T, R>(observer, args, Array.from(this.getBucketTaps(args)));
   }
 
+  /**
+   * @internal
+   * */
   protected invokeSynchronously(
     args: AsArray<T>,
     observer?: IInvokeSynchronouslyObserver<T, R>
@@ -319,6 +352,9 @@ class Hook<T, R> {
     );
   }
 
+  /**
+   * @internal
+   * */
   protected getBucketTaps(args: AsArray<T>): Set<ITapOptions<T, R>> {
     let presetTaps = Array.from(this.presetTapBucket);
     let bucketTaps: ITapID[] = [];
@@ -341,6 +377,9 @@ class Hook<T, R> {
     return selectedTapOptions;
   }
 
+  /**
+   * @internal
+   * */
   private tapping(
     fn: IAsyncTapCallback<T, R> | ISyncTapCallback<T, R>,
     bucketHash?: IHookBucketType
@@ -369,6 +408,9 @@ class Hook<T, R> {
     };
   }
 
+  /**
+   * @internal
+   * */
   protected popoutTap(tapId: ITapID) {
     let options = this.tapOptionsCache.get(tapId);
     if (!options) return;
@@ -385,6 +427,9 @@ class Hook<T, R> {
     this.tapOptionsCache.delete(tapId);
   }
 
+  /**
+   * @internal
+   * */
   private generateTapId(): ITapID {
     return `tap:${++this.tapIdSeed}?${Date.now()}`;
   }
@@ -396,9 +441,9 @@ class Hook<T, R> {
  * @remarks
  * Providing `tap` method for synchronous hooks
  *
- * @internal
+ * @public
  * */
-abstract class SyncTapHook<T, R> extends Hook<T, R> {
+export abstract class SyncTapHook<T, R> extends Hook<T, R> {
   /**
    * listen to hook
    *
@@ -422,9 +467,9 @@ abstract class SyncTapHook<T, R> extends Hook<T, R> {
  * @remarks
  * Providing `tapAsync` and `tapPromise` methods for asynchronous hooks
  *
- * @internal
+ * @public
  * */
-abstract class AsyncTapHook<T, R> extends Hook<T, R> {
+export abstract class AsyncTapHook<T, R> extends Hook<T, R> {
   /**
    * listen to hook in async callback mode
    *
@@ -798,3 +843,16 @@ export class AsyncSeriesWaterfallHook<T, R> extends AsyncTapHook<T, R> {
     });
   }
 }
+
+export default {
+  SyncHook,
+  SyncBailHook,
+  SyncWaterfallHook,
+
+  AsyncSeriesHook,
+  AsyncSeriesBailHook,
+  AsyncSeriesWaterfallHook,
+
+  AsyncParallelHook,
+  AsyncParallelBailHook
+};

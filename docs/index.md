@@ -8,5 +8,5 @@
 
 |  Package | Description |
 |  --- | --- |
-|  [hamon](./hamon.md) |  |
+|  [@funnyecho/hamon](./hamon.md) |  |
 
