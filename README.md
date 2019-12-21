@@ -63,6 +63,38 @@ Besides, we can combine with `Sync`, `AsyncParallel`, or `AsyncSeries` for more 
   *  `callAsync(...args, cb)` or `callPromise(...args)` to invoke hook, all listeners were called asynchronously in series; 
   * Able to combine with `Bail` , `Waterfall` and basic type;
 
+### Hook with hashcode
+
+Sometimes, we are only intested in a certain clause of hook.
+
+For example, message notification from webscoket was delivered by hook, and our app want to focus on the notification of current chatroom. So we use `chatroom id` as hashcode. Code demo show below:
+
+```typescript
+import { SyncHook } from '@funnyecho/hamon';
+
+// create hook with hashcode calculate function
+let messagHook = new SyncHook((messageEntity) => messageEntity.chatroomId);
+
+let currentChatroomId = 123;
+
+// listen to hook and only focus on currentChatroomId
+messageHook.tap(messageEntity => {
+  // do something with message received
+}, currentChatroomId);
+
+// chatroomId didn't equal to currentChatroomId, listener won't be called
+messageHook.call({chatroomId: 'not current'});
+
+// chatroomId was equaled to currentChatroomId, listener was called
+messageHook.call({chatroomId: currentChatroomId});
+```
+
+* All types of hook can be created with hashcode calculate function which shall calculate a value from calling arguments.
+* Listener can tap to hook with specified hashcode value
+* When hook was called with arguments:
+  * those listeners matched hashcode value were called;
+  * those listeners did't tap with any hashcode were called;
+
 ## Documentation
 
 refer to: [docs](./docs/index.md)
@@ -380,3 +412,10 @@ hook.callAsync(2, (v) => {
 */
 hook.callPromise(2).then((v) => console.log('AsyncSeriesWaterfallHook_promise_done', v));
 ```
+
+### Exhaust Hook Listener
+
+`Hook.prototype.exhaust()` can clean all listener of current hook.
+
+`Hook.prototype.destroy()` do the same thing.
+
