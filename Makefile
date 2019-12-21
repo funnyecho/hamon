@@ -18,4 +18,7 @@ api-extract: build
 	@api-extractor run --local --verbose -c config/api-extractor.json
 	
 api-document: api-extract
-	 @api-documenter generate -i ./api_report_local -o ./docs
+	@api-documenter generate -i ./api_report_local -o ./docs
+	 
+release: build
+	@npm publish --access public
