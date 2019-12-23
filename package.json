@@ -1,6 +1,6 @@
 {
   "name": "@funnyecho/hamon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Event-driven architecture with varying types of hook",
   "jest": {
     "testRegex": "/config/jest/dont-run-jest-directly\\.js$"
