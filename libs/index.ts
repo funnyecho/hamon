@@ -311,6 +311,10 @@ export abstract class Hook<T, R> {
     args: AsArray<T>,
     observer?: IInvokeSeriesObserver<T, R>
   ) {
+    if (!observer) {
+      observer = {};
+    }
+
     if (typeof observer.onComplete === "function") {
       // @ts-ignored
       observer.onComplete = once(observer.onComplete);
@@ -330,6 +334,10 @@ export abstract class Hook<T, R> {
     args: AsArray<T>,
     observer?: IInvokeParallelObserver<T, R>
   ) {
+    if (!observer) {
+      observer = {};
+    }
+
     if (typeof observer.onComplete === "function") {
       // @ts-ignored
       observer.onComplete = once(observer.onComplete);
@@ -345,6 +353,10 @@ export abstract class Hook<T, R> {
     args: AsArray<T>,
     observer?: IInvokeSynchronouslyObserver<T, R>
   ) {
+    if (!observer) {
+      observer = {};
+    }
+
     return invokeSynchronously<T, R>(
       observer,
       args,
