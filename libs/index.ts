@@ -68,7 +68,11 @@ function invokeSeriesNext<T, R>(
   }
 
   if (!list.length) {
-    onComplete(null, args[0]);
+    if (observer.shouldWaterfall) {
+      onComplete(null, args[0]);
+    } else {
+      onComplete(null, undefined);
+    }
     return;
   }
 
@@ -116,7 +120,7 @@ function invokeParallel<T, R>(
   }
 
   if (!list.length) {
-    onComplete(null, args[0]);
+    onComplete(null, undefined);
     return;
   }
 
@@ -154,7 +158,8 @@ function invokeSynchronously<T, R>(
   list: ITapOptions<T, R>[]
 ): R {
   if (!list.length) {
-    return args[0];
+    if (observer.shouldWaterfall) return args[0];
+    else return undefined;
   }
 
   let downstreamArgs = Array.from(args) as AsArray<T>;
@@ -172,7 +177,8 @@ function invokeSynchronously<T, R>(
     }
   }
 
-  return downstreamArgs[0];
+  if (observer.shouldWaterfall) return downstreamArgs[0];
+  else return undefined;
 }
 
 /**

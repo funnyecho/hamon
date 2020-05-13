@@ -38,7 +38,7 @@ describe("SyncBailHook", () => {
 
           expect(cb1).toBeCalledTimes(3);
           expect(cb1).toBeCalledWith(...args);
-          expect(bailResult).toBe(args[0]);
+          expect(bailResult).toBe(undefined);
 
           cb1.mockClear();
           cb2.mockClear();

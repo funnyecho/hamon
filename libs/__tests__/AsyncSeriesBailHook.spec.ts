@@ -176,7 +176,7 @@ describe("AsyncSeriesBailHook", () => {
       closureName([
         "if listener failed, invocation immediately bailed by calling `cb(error)`",
         "if listener bailed, invocation immediately bailed by calling `cb(undefined, value)`",
-        "if no listener was bailed, invocation bailed with args[0] by calling `cb(undefined, args[0])`"
+        "if no listener was bailed, invocation bailed with undefined by calling `cb(undefined, undefined)`"
       ]),
       done => {
         let args = [1, 2];
@@ -263,7 +263,7 @@ describe("AsyncSeriesBailHook", () => {
           .mockImplementationOnce((...invokeResult) => {
             expect(invokeResult.length).toBe(2);
             expect(invokeResult[0]).toBeNil();
-            expect(invokeResult[1]).toBe(args[0]);
+            expect(invokeResult[1]).toBe(undefined);
 
             expect(promiseCompleteCb).toBeCalled();
 
@@ -319,7 +319,7 @@ describe("AsyncSeriesBailHook", () => {
       closureName([
         "if listener failed, invocation immediately bailed by rejecting promise with error",
         "if listener bailed, invocation immediately bailed by resolving promise",
-        "if no listener was bailed, invocation completed by resolving promise with `args[0]`"
+        "if no listener was bailed, invocation completed by resolving promise with `undefined`"
       ]),
       async () => {
         let args = [1, 2];
@@ -399,7 +399,7 @@ describe("AsyncSeriesBailHook", () => {
 
         invokePromise = hook.callPromise(...args);
 
-        await expect(invokePromise).resolves.toBe(args[0]);
+        await expect(invokePromise).resolves.toBe(undefined);
 
         expect(promiseCompleteCb).toBeCalled();
       }
@@ -426,7 +426,7 @@ describe("AsyncSeriesBailHook", () => {
 
       invokePromise = hook.callPromise(...args);
 
-      await expect(invokePromise).resolves.toBe(args[0]);
+      await expect(invokePromise).resolves.toBe(undefined);
       expect(asyncCb).toBeCalledTimes(1);
       expect(promiseCb).toBeCalledTimes(1);
 
@@ -436,7 +436,7 @@ describe("AsyncSeriesBailHook", () => {
       hook.exhaust();
       invokePromise = hook.callPromise(...args);
 
-      await expect(invokePromise).resolves.toBe(args[0]);
+      await expect(invokePromise).resolves.toBe(undefined);
       expect(asyncCb).not.toBeCalled();
       expect(promiseCb).not.toBeCalled();
     });
@@ -447,7 +447,7 @@ describe("AsyncSeriesBailHook", () => {
         .mockImplementationOnce((...invokeResult) => {
           expect(invokeResult.length).toBe(2);
           expect(invokeResult[0]).toBeNil();
-          expect(invokeResult[1]).toBe(args[0]);
+          expect(invokeResult[1]).toBe(undefined);
 
           expect(asyncCb).toBeCalledTimes(1);
           expect(promiseCb).toBeCalledTimes(1);
@@ -461,7 +461,7 @@ describe("AsyncSeriesBailHook", () => {
         .mockImplementationOnce((...invokeResult) => {
           expect(invokeResult.length).toBe(2);
           expect(invokeResult[0]).toBeNil();
-          expect(invokeResult[1]).toBe(args[0]);
+          expect(invokeResult[1]).toBe(undefined);
 
           expect(asyncCb).not.toBeCalled();
           expect(promiseCb).not.toBeCalled();

@@ -175,7 +175,7 @@ describe("AsyncParallelBailHook", () => {
       closureName([
         "if bailed with failed listener first, invocation failed by calling `cb(error)`",
         "if bailed with completed listener first, invocation completed by calling `cb(undefined, value)`",
-        "if no listener was bailed, invocation completed with args[0] by calling `cb(undefined, args[0])`"
+        "if no listener was bailed, invocation completed with undefined by calling `cb(undefined, undefined)`"
       ]),
       done => {
         let asyncErr = new Error("async error");
@@ -270,6 +270,14 @@ describe("AsyncParallelBailHook", () => {
             expect(args[0]).toBeNil();
             expect(args[1]).toBe("promise complete");
 
+            hook.exhaust();
+            hook.callAsync.call(hook, ...args, invokeCb);
+          })
+          .mockImplementationOnce((...args) => {
+            expect(args.length).toBe(2);
+            expect(args[0]).toBeNil();
+            expect(args[1]).toBe(undefined);
+
             done();
           });
 
@@ -332,7 +340,7 @@ describe("AsyncParallelBailHook", () => {
       closureName([
         "if bailed with failed listener first, invocation failed by rejecting promise with error",
         "if bailed with completed listener first, invocation completed by resolving promise",
-        "if no listener was bailed, invocation completed by resolving promise with `args[0]`"
+        "if no listener was bailed, invocation completed by resolving promise with `undefined`"
       ]),
       async () => {
         let asyncErr = new Error("async error");
@@ -428,6 +436,11 @@ describe("AsyncParallelBailHook", () => {
         invokePromise = hook.callPromise.apply(hook, args);
 
         await expect(invokePromise).resolves.toBe("promise complete");
+
+        hook.exhaust();
+        invokePromise = hook.callPromise.apply(hook, args);
+
+        await expect(invokePromise).resolves.toBe(undefined);
       }
     );
   });
@@ -453,7 +466,7 @@ describe("AsyncParallelBailHook", () => {
       });
     });
 
-    test("`callPromise(...args)` invoke nothing, promise resolved with `args[0]` immediately", async () => {
+    test("`callPromise(...args)` invoke nothing, promise resolved with `undefined` immediately", async () => {
       let invokePromise;
 
       hook = new AsyncParallelBailHook<number[], string>();
@@ -472,7 +485,7 @@ describe("AsyncParallelBailHook", () => {
       hook.exhaust();
       invokePromise = hook.callPromise(...args);
 
-      await expect(invokePromise).resolves.toBe(1);
+      await expect(invokePromise).resolves.toBe(undefined);
       expect(asyncCb).not.toBeCalled();
       expect(promiseCb).not.toBeCalled();
     });
@@ -497,7 +510,7 @@ describe("AsyncParallelBailHook", () => {
         .mockImplementationOnce((...invokeResult) => {
           expect(invokeResult.length).toBe(2);
           expect(invokeResult[0]).toBeNil();
-          expect(invokeResult[1]).toBe(args[0]);
+          expect(invokeResult[1]).toBe(undefined);
 
           expect(asyncCb).not.toBeCalled();
           expect(promiseCb).not.toBeCalled();
